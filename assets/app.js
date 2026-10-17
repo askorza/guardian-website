@@ -43,39 +43,59 @@
     globeArea.setAttribute('aria-label', `Interactive rotating Guardian globe. Currently exploring ${options[active].name}. Drag or use arrow keys to explore more.`);
   }
 
+  // Each of the three cards is a physical object on a rotating orbital plane.
+  // We preserve its displayed content during flight so a click feels like
+  // movement, not merely a text change in a fixed position.
   const orbitSlots = [byId('orbit-card-a'), byId('orbit-card-b'), byId('orbit-card-c')].filter(Boolean);
+  const ORBIT_STEP = Math.PI * 2 / 3;
+  const ORBIT_BASE = [-2.43, -0.335, 1.765];
+  let orbitPending = false;
+  let orbitVelocity = 0;
+  let updatePulse = 0;
+
   function positionOrbitCards() {
     if (!globeArea || !orbitSlots.length) return;
-    const rect = globeArea.getBoundingClientRect();
-    const cx = rect.width * 0.5;
-    const cy = rect.height * 0.47;
-    const isMobile = rect.width < 560;
-    const rx = Math.min(rect.width * (isMobile ? 0.37 : 0.405), isMobile ? 152 : 246);
-    const ry = Math.min(rect.height * (isMobile ? 0.285 : 0.312), isMobile ? 104 : 158);
-    const base = globe.cardAngle * 0.96 - 0.58;
-    const offsets = [-2.22, -0.02, 2.08];
+    const width = globeArea.clientWidth;
+    const height = globeArea.clientHeight;
+    const mobile = width < 540;
+    const cx = width * .50;
+    const cy = height * (mobile ? .455 : .465);
+    const rx = Math.min(width * (mobile ? .345 : .40), mobile ? 155 : 244);
+    const ry = Math.min(height * (mobile ? .285 : .30), mobile ? 108 : 172);
+    const halfTurn = globe.orbitAngle;
     orbitSlots.forEach((card, index) => {
-      const a = base + offsets[index];
-      const ex = Math.cos(a), ey = Math.sin(a);
+      const theta = ORBIT_BASE[index] + halfTurn;
+      const ex = Math.cos(theta);
+      const ey = Math.sin(theta);
       const depth = (ey + 1) / 2;
       const x = cx + rx * ex;
-      const y = cy + ry * ey * 0.97;
-      const scale = 0.83 + depth * 0.2;
-      const opacity = 0.58 + depth * 0.4;
-      const rotate = ex * 5.3;
-      const blur = (1 - depth) * 1.4;
-      const lift = (depth - 0.5) * 6;
+      const y = cy + ry * ey;
+      const size = mobile ? .89 + depth * .12 : .84 + depth * .18;
+      // A tiny parallax shift and gentle foreshortening sell the 3D path.
       card.style.setProperty('--card-x', `${x.toFixed(1)}px`);
-      card.style.setProperty('--card-y', `${(y - lift).toFixed(1)}px`);
-      card.style.setProperty('--card-scale', scale.toFixed(3));
-      card.style.setProperty('--card-rotate', `${rotate.toFixed(2)}deg`);
-      card.style.setProperty('--card-opacity', opacity.toFixed(3));
-      card.style.setProperty('--card-blur', `${blur.toFixed(2)}px`);
-      card.style.setProperty('--card-shadow-y', `${(18 + depth * 24).toFixed(1)}px`);
-      card.style.zIndex = String(5 + Math.round(depth * 10));
-      card.classList.toggle('is-front', depth > 0.72);
-      card.classList.toggle('is-back', depth < 0.34);
+      card.style.setProperty('--card-y', `${y.toFixed(1)}px`);
+      card.style.setProperty('--card-scale', size.toFixed(3));
+      card.style.setProperty('--card-rotate', `${(ex * 5).toFixed(2)}deg`);
+      card.style.setProperty('--card-opacity', `${(.80 + depth * .20).toFixed(3)}`);
+      card.style.setProperty('--card-blur', `${((1-depth) * .55).toFixed(2)}px`);
+      card.style.setProperty('--card-shadow-y', `${(16 + depth * 17).toFixed(1)}px`);
+      card.style.zIndex = String(7 + Math.round(depth * 7));
+      card.classList.toggle('is-front', depth > .57);
+      card.classList.toggle('is-back', depth <= .57);
     });
+  }
+
+  function finishOrbitUpdate() {
+    if (!orbitPending || isDragging) return;
+    if (Math.abs(globe.aimOrbit - globe.orbitAngle) > .064 || Math.abs(orbitVelocity) > .32) return;
+    orbitPending = false;
+    // An extremely short crossfade makes the new capability captions feel
+    // like the next orbit group arriving instead of snapping into place.
+    orbitSlots.forEach(card => card.classList.add('orbit-refresh'));
+    window.setTimeout(() => {
+      showOptions(false);
+      orbitSlots.forEach(card => card.classList.remove('orbit-refresh'));
+    }, prefersReducedMotion ? 0 : 135);
   }
 
   const globe = {
@@ -83,7 +103,8 @@
     latitude: 0.17,
     aimLongitude: -0.38,
     aimLatitude: 0.17,
-    cardAngle: -0.38,
+    orbitAngle: 0,
+    aimOrbit: 0,
     last: 0,
     size: 0,
     dpr: 1,
@@ -91,8 +112,6 @@
   };
   let isDragging = false;
   let pointerStart = null;
-  let totalDragged = 0;
-  let dragIndex = 0;
   let pointerDownPosition = null;
   let frame = 0;
   let lastGlobePaint = 0;
@@ -206,10 +225,15 @@
   }
 
   function rotateFeature(direction) {
-    active = wrapIndex(active + direction);
-    globe.aimLongitude += direction * Math.PI / 5.5;
+    if (!direction) return;
+    const wholeSteps = Math.sign(direction) * Math.max(1, Math.round(Math.abs(direction)));
+    active = wrapIndex(active + wholeSteps);
+    globe.aimLongitude += wholeSteps * Math.PI / 5.5;
+    globe.aimOrbit += wholeSteps * ORBIT_STEP;
     globe.interaction = performance.now();
-    showOptions();
+    orbitPending = true;
+    // Leave labels untouched while each physical card travels through the arc.
+    globeArea?.setAttribute('aria-label', `Guardian orbit moving to ${options[active].name}.`);
   }
 
   byId('globe-next')?.addEventListener('click', () => rotateFeature(1));
@@ -237,9 +261,8 @@
     if (e.target.closest('button, .orbit-card')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     isDragging = true;
-    totalDragged = 0;
-    pointerStart = { x: e.clientX, y: e.clientY, initialLongitude: globe.aimLongitude, initialLatitude: globe.aimLatitude };
-    dragIndex = active;
+    pointerStart = { x: e.clientX, y: e.clientY, initialLongitude: globe.aimLongitude, initialLatitude: globe.aimLatitude,
+      initialOrbit: globe.aimOrbit, initialActive: active };
     pointerDownPosition = { x: e.clientX, y: e.clientY, onHead: !!head && (() => { const r = head.getBoundingClientRect(); return e.clientX >= r.left - 12 && e.clientX <= r.right + 12 && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12; })() };
     globe.interaction = performance.now();
     globeArea.classList.add('dragging');
@@ -249,15 +272,29 @@
     if (!isDragging || !pointerStart) return;
     const dx = e.clientX - pointerStart.x;
     const dy = e.clientY - pointerStart.y;
-    totalDragged = dx;
     globe.aimLongitude = pointerStart.initialLongitude + dx * .007;
     globe.aimLatitude = Math.max(-.7, Math.min(.7, pointerStart.initialLatitude - dy * .004));
+    globe.aimOrbit = pointerStart.initialOrbit + dx * .0125;
     globe.interaction = performance.now();
-    const steps = Math.trunc(dx / 95);
-    const next = wrapIndex(dragIndex + steps);
-    if (next !== active) { active = next; showOptions(); }
+    const steps = Math.round((globe.aimOrbit - pointerStart.initialOrbit) / ORBIT_STEP);
+    active = wrapIndex(pointerStart.initialActive + steps);
+    orbitPending = true;
   });
-  const endDrag = () => { isDragging = false; pointerStart = null; pointerDownPosition = null; globeArea?.classList.remove('dragging'); };
+  const endDrag = () => {
+    if (!isDragging) return;
+    if (pointerStart) {
+      const steps = Math.round((globe.aimOrbit - pointerStart.initialOrbit) / ORBIT_STEP);
+      const snapped = pointerStart.initialOrbit + steps * ORBIT_STEP;
+      globe.aimOrbit = snapped;
+      globe.aimLongitude = pointerStart.initialLongitude + (snapped - pointerStart.initialOrbit) * .27;
+      active = wrapIndex(pointerStart.initialActive + steps);
+      orbitPending = orbitPending || !!steps;
+    }
+    isDragging = false;
+    pointerStart = null;
+    pointerDownPosition = null;
+    globeArea?.classList.remove('dragging');
+  };
   globeArea?.addEventListener('pointerup', (e) => {
     if (pointerDownPosition?.onHead && Math.hypot(e.clientX - pointerDownPosition.x, e.clientY - pointerDownPosition.y) < 15) surpriseFace(head);
     endDrag();
@@ -396,9 +433,22 @@
     const easing = prefersReducedMotion ? 1 : .075;
     globe.longitude += (globe.aimLongitude - globe.longitude) * easing;
     globe.latitude += (globe.aimLatitude - globe.latitude) * easing;
-    globe.cardAngle += (globe.longitude - globe.cardAngle) * (prefersReducedMotion ? 1 : .11);
+    if (prefersReducedMotion) {
+      globe.orbitAngle = globe.aimOrbit;
+      orbitVelocity = 0;
+    } else {
+      // Frame-rate-independent damped spring. A 120° turn visibly travels
+      // around the ellipse and retains a soft, premium ease-out.
+      const seconds = Math.min(.04, Math.max(.001, dt / 1000));
+      const stiffness = 56;
+      const friction = 15.5;
+      orbitVelocity += (globe.aimOrbit - globe.orbitAngle) * stiffness * seconds;
+      orbitVelocity *= Math.exp(-friction * seconds);
+      globe.orbitAngle += orbitVelocity * seconds;
+    }
     animateFaces(now);
     positionOrbitCards();
+    finishOrbitUpdate();
     // Complex cartography is expensive. Paint the globe at ~24fps only while visible;
     // the eyes update independently at the browser's animation cadence.
     if ((!prefersReducedMotion || frame++ < 4) && globeInView && now - lastGlobePaint > 42) {
