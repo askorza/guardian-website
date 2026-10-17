@@ -7,7 +7,6 @@
   const globeArea = byId('globe-interaction');
   const canvas = byId('globe-canvas');
   const head = byId('guardian-head');
-  const pupils = [...document.querySelectorAll('.guardian-head .pupil')];
   const options = [
     { icon: '✦', name: 'Plan your week', caption: 'A clearer path to what matters' },
     { icon: '◈', name: 'Explore ideas', caption: 'Fresh angles on big questions' },
@@ -55,6 +54,8 @@
   let totalDragged = 0;
   let dragIndex = 0;
   let frame = 0;
+  let lastGlobePaint = 0;
+  let globeInView = true;
   const ctx = canvas && canvas.getContext('2d', { alpha: true });
 
   function resizeCanvas() {
@@ -205,19 +206,73 @@
   globeArea?.addEventListener('pointercancel', endDrag);
   globeArea?.addEventListener('lostpointercapture', endDrag);
 
-  // Look at the visitor, even when their pointer is outside the globe.
-  let eyeTargetX = 0, eyeTargetY = 0, eyeX = 0, eyeY = 0;
-  if (window.matchMedia('(pointer: fine)').matches) {
-    window.addEventListener('pointermove', (event) => {
-      if (!head) return;
-      const r = head.getBoundingClientRect();
-      const dx = event.clientX - (r.left + r.width / 2);
-      const dy = event.clientY - (r.top + r.height / 2);
-      const distance = Math.max(90, Math.hypot(dx, dy));
-      eyeTargetX = Math.max(-1, Math.min(1, dx / distance));
-      eyeTargetY = Math.max(-1, Math.min(1, dy / distance));
-    }, { passive: true });
-    document.addEventListener('pointerleave', () => { eyeTargetX = 0; eyeTargetY = 0; });
+  // Every Guardian face gets its own gaze, based on its own position on screen.
+  // The old design moved a full-size layer inside a fully filled eye; it looked static.
+  // Our smaller illuminated pupils now visibly move within each eye socket.
+  const finePointer = window.matchMedia('(pointer: fine)').matches;
+  const faces = [...document.querySelectorAll('[data-guardian-face]')].map((node, index) => ({
+    node,
+    range: Number(node.dataset.gaze) || 6,
+    x: 0,
+    y: 0,
+    blinkAt: performance.now() + 1800 + index * 1150,
+    idlePhase: index * 1.37
+  }));
+  const brandEyes = [...document.querySelectorAll('.brand-robot')];
+  let pointer = null;
+
+  window.addEventListener('pointermove', (event) => {
+    if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
+      pointer = { x: event.clientX, y: event.clientY };
+    }
+  }, { passive: true });
+  window.addEventListener('blur', () => { pointer = null; });
+  document.addEventListener('pointerout', (event) => {
+    if (!event.relatedTarget) pointer = null;
+  }, { passive: true });
+
+  function animateFaces(now) {
+    // Gaze follows the pointer across the entire viewport, including outside
+    // the globe and the demo. Short idle glances make Guardian feel curious.
+    for (const face of faces) {
+      let targetX = 0, targetY = 0;
+      if (pointer && finePointer) {
+        const rect = face.node.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        // tanh keeps the pupil inside its socket while offering a clear gaze.
+        targetX = Math.tanh((pointer.x - cx) / Math.max(82, rect.width * .72));
+        targetY = Math.tanh((pointer.y - cy) / Math.max(78, rect.height * 1.1));
+      } else if (!prefersReducedMotion) {
+        // Gentle personality, not jitter: small coordinated micro-glances.
+        targetX = Math.sin(now / 2450 + face.idlePhase) * .24;
+        targetY = Math.sin(now / 3400 + face.idlePhase) * .16;
+      }
+      const easing = prefersReducedMotion ? 1 : .145;
+      face.x += (targetX - face.x) * easing;
+      face.y += (targetY - face.y) * easing;
+      face.node.style.setProperty('--eye-x', `${(face.x * face.range).toFixed(2)}px`);
+      face.node.style.setProperty('--eye-y', `${(face.y * face.range * .68).toFixed(2)}px`);
+      face.node.style.setProperty('--face-tilt', `${(face.x * 3.5).toFixed(2)}deg`);
+
+      if (!prefersReducedMotion && now > face.blinkAt) {
+        face.node.classList.remove('blinking');
+        void face.node.offsetWidth;
+        face.node.classList.add('blinking');
+        face.blinkAt = now + 3100 + Math.random() * 3400;
+        window.setTimeout(() => face.node.classList.remove('blinking'), 230);
+      }
+    }
+    if (head) {
+      const hero = faces.find(face => face.node === head);
+      if (hero) head.style.transform = `translate(-50%,-50%) rotate(${(hero.x * 3.5).toFixed(2)}deg)`;
+    }
+    // Even the small nav brand reacts. Keep movement small to avoid jitter.
+    const primary = faces[0];
+    for (const brand of brandEyes) {
+      brand.style.setProperty('--eye-x', `${((primary?.x || 0) * 1.6).toFixed(2)}px`);
+      brand.style.setProperty('--eye-y', `${((primary?.y || 0) * 1.1).toFixed(2)}px`);
+    }
   }
 
   function tick(now) {
@@ -229,19 +284,27 @@
     const easing = prefersReducedMotion ? 1 : .075;
     globe.longitude += (globe.aimLongitude - globe.longitude) * easing;
     globe.latitude += (globe.aimLatitude - globe.latitude) * easing;
-    eyeX += (eyeTargetX - eyeX) * .13;
-    eyeY += (eyeTargetY - eyeY) * .13;
-    for (const pupil of pupils) pupil.style.transform = `translate(${(eyeX * 6).toFixed(2)}px, ${(eyeY * 6).toFixed(2)}px)`;
-    if (head) head.style.transform = `translate(-50%,-50%) rotate(${(eyeX * 2.5).toFixed(2)}deg)`;
-    if (!prefersReducedMotion || frame++ < 4) drawGlobe();
+    animateFaces(now);
+    // Complex cartography is expensive. Paint the globe at ~24fps only while visible;
+    // the eyes update independently at the browser's animation cadence.
+    if ((!prefersReducedMotion || frame++ < 4) && globeInView && now - lastGlobePaint > 42) {
+      drawGlobe();
+      lastGlobePaint = now;
+    }
     requestAnimationFrame(tick);
   }
   if (canvas && ctx) {
+    if ('IntersectionObserver' in window && globeArea) {
+      new IntersectionObserver(entries => {
+        globeInView = entries[0]?.isIntersecting ?? true;
+      }, { rootMargin: '120px 0px' }).observe(globeArea);
+    }
     if ('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(canvas);
     window.addEventListener('resize', resizeCanvas, { passive: true });
     resizeCanvas();
-    requestAnimationFrame(tick);
   }
+  // Faces must not depend on WebGL/canvas availability.
+  requestAnimationFrame(tick);
   showOptions(false);
   if (head && !prefersReducedMotion) {
     const blink = () => { head.classList.add('blinking'); setTimeout(() => head.classList.remove('blinking'), 220); };
@@ -285,6 +348,13 @@
     answer.textContent = messages[1];
     ai.append(star, answer);
     chat.append(user, ai);
+    const cloud = byId('guardian-cloud');
+    cloud?.classList.remove('reacting');
+    if (cloud && !prefersReducedMotion) {
+      void cloud.offsetWidth;
+      cloud.classList.add('reacting');
+      window.setTimeout(() => cloud.classList.remove('reacting'), 640);
+    }
   }));
 
   // Real waitlist API endpoint, backed by Cloudflare Pages Functions + D1.
