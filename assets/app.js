@@ -8,9 +8,9 @@
   const canvas = byId('globe-canvas');
   const head = byId('guardian-head');
   const options = [
-    { icon: '⌁', name: 'Research a topic', caption: 'Go deeper, find the useful signal' },
-    { icon: '◷', name: 'Organize your time', caption: 'Make your day feel lighter' },
-    { icon: '✓', name: 'Homework help', caption: 'Learn it honestly, not just finish it' },
+    { icon: '⌁', name: 'Research a topic', caption: 'Source, compare, simplify' },
+    { icon: '◷', name: 'Organize your time', caption: 'Turn scattered plans into a calmer day' },
+    { icon: '✓', name: 'Homework help', caption: 'Understand it properly, keep your own voice' },
     { icon: '✦', name: 'Plan your week', caption: 'A clearer path to what matters' },
     { icon: '◈', name: 'Explore ideas', caption: 'Fresh angles on big questions' },
     { icon: '◎', name: 'Remember details', caption: 'Context you choose to keep' },
@@ -243,7 +243,7 @@
     blinkAt: performance.now() + 1800 + index * 1150,
     idlePhase: index * 1.37
   }));
-  const brandEyes = [...document.querySelectorAll('.brand-robot')];
+  const brandEyes = [...document.querySelectorAll('.brand-face')];
   let pointer = null;
   let lastActivity = performance.now();
   let heroTipUntil = 0;
@@ -267,8 +267,8 @@
     lastActivity = now;
     face.lockedUntil = now + 1350;
     setMood(face, 'surprised');
-    if (face.node === head) showThought(heroTip, label || 'Oh! Hi there! ✦', now + 2100);
-    if (face.node.dataset.personality === 'cloud') showThought(cloudTip, label || 'You found me! ♡', now + 2100);
+    if (face.node === head) showThought(heroTip, label || 'Hey — I’m Guardian ✦', now + 2100);
+    if (face.node.dataset.personality === 'cloud') showThought(cloudTip, label || 'Hi, you found me ♡', now + 2100);
   }
 
   function setMood(face, mood) {
@@ -289,9 +289,9 @@
   window.addEventListener('pointerdown', () => { lastActivity = performance.now(); }, { passive: true });
   window.addEventListener('touchstart', () => { lastActivity = performance.now(); }, { passive: true });
   window.addEventListener('blur', () => { pointer = null; });
-  cloudButton?.addEventListener('click', () => surpriseFace(cloudButton, 'You made me smile! ♡'));
-  cloudButton?.addEventListener('pointerenter', () => { lastActivity = performance.now(); showThought(cloudTip, 'Psst... say hello! ✳', performance.now() + 2400); });
-  globeArea?.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) surpriseFace(head, 'Double hello! ✨'); });
+  cloudButton?.addEventListener('click', () => surpriseFace(cloudButton, 'You made me blush ♡'));
+  cloudButton?.addEventListener('pointerenter', () => { lastActivity = performance.now(); showThought(cloudTip, 'Tap me — I’m friendly ✳', performance.now() + 2400); });
+  globeArea?.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) surpriseFace(head, 'You seem curious ✨'); });
   document.addEventListener('pointerout', (event) => {
     if (!event.relatedTarget) pointer = null;
   }, { passive: true });
@@ -399,9 +399,9 @@
 
   // Illustrative, explicitly non-live chat examples.
   const dialogue = {
-    homework: ["I need help with homework, but I still want it to sound like me.", "Absolutely. I can explain it step by step, help you think it through, and keep the work honest so you actually learn it."],
-    plan: ["My day is getting messy and I need a reset.", "Let's keep it simple. We can sort out your priorities, make a plan for today, and leave a little room to breathe."],
-    research: ["Can you help me research a topic without making it overwhelming?", "Yes. I'll pull out the key ideas, compare perspectives, and turn the messy part into something clear and useful."]
+    homework: ["I need help with homework, but I still want it to sound like me.", "Absolutely. I can explain it step by step, test your understanding, and help you build an answer that still sounds like you."],
+    plan: ["My day is getting messy and I need a reset.", "Let's make it feel lighter. I can sort your priorities, protect a focus window, and help you stop carrying everything at once."],
+    research: ["Can you help me research a topic without making it overwhelming?", "Yes. I'll pull the key ideas, compare perspectives, and turn the mess into a brief you can actually use."]
   };
   const chat = byId('chat-dialogue');
   document.querySelectorAll('.prompt-chip').forEach((chip) => chip.addEventListener('click', () => {
@@ -422,7 +422,7 @@
     ai.append(star, answer);
     chat.append(user, ai);
     const cloud = byId('guardian-cloud');
-    surpriseFace(cloud, chip.dataset.prompt === 'homework' ? 'We’ll learn it together ✦' : chip.dataset.prompt === 'plan' ? 'We can do this ♡' : 'Let’s dig in ✳');
+    surpriseFace(cloud, chip.dataset.prompt === 'homework' ? 'We’ll figure it out together ✦' : chip.dataset.prompt === 'plan' ? 'Let’s make the day lighter ♡' : 'Let’s find the signal ✳');
     cloud?.classList.remove('reacting');
     if (cloud && !prefersReducedMotion) {
       void cloud.offsetWidth;
@@ -441,7 +441,7 @@
     storySteps.forEach((step, i) => step.classList.toggle('is-active', i == index));
     storyPanels.forEach((panel, i) => panel.classList.toggle('is-active', i == index));
     if (storyProgress) storyProgress.style.width = `${((index + 1) / Math.max(1, storySteps.length)) * 100}%`;
-    document.querySelectorAll('.story-pagination span').forEach((dot,i)=>dot.classList.toggle('is-active',i===index));
+    document.querySelectorAll('.story-dots span').forEach((dot,i)=>dot.classList.toggle('is-active',i===index));
   }
   storySteps.forEach((step, index) => {
     step.addEventListener('click', () => setActiveStory(index));
@@ -451,9 +451,25 @@
       const visible = entries.filter(entry => entry.isIntersecting)
         .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
       if (visible[0]) setActiveStory(Number(visible[0].target.dataset.storyStep || 0));
-    }, { threshold: 0.55, rootMargin: '-10% 0px -30% 0px' });
+    }, { threshold: 0.48, rootMargin: '-10% 0px -28% 0px' });
     storySteps.forEach((step) => storyObserver.observe(step));
   }
+
+  // Interactive phone concept: visual exploration only, no live AI backend.
+  const phoneTabs = [...document.querySelectorAll('[data-phone-tab]')];
+  const phoneScreens = [...document.querySelectorAll('[data-app-screen]')];
+  const phoneNav = [...document.querySelectorAll('[data-app-nav]')];
+  function setPhoneScreen(name) {
+    phoneScreens.forEach(screen => screen.classList.toggle('is-active', screen.dataset.appScreen === name));
+    phoneTabs.forEach(tab => {
+      const selected = tab.dataset.phoneTab === name;
+      tab.classList.toggle('is-active', selected);
+      tab.setAttribute('aria-selected', String(selected));
+    });
+    phoneNav.forEach(node => node.classList.toggle('is-active', node.dataset.appNav === name));
+  }
+  phoneTabs.forEach(tab => tab.addEventListener('click', () => setPhoneScreen(tab.dataset.phoneTab)));
+  phoneNav.forEach(node => node.addEventListener('click', () => setPhoneScreen(node.dataset.appNav)));
 
   // Real waitlist API endpoint, backed by Cloudflare Pages Functions + D1.
   // This deliberately does NOT claim a successful signup when the API is unavailable.
@@ -493,7 +509,7 @@
 
   // Scroll reveals; disabled for visitors asking for reduced motion.
   if (!prefersReducedMotion && 'IntersectionObserver' in window) {
-    const items = document.querySelectorAll('.section-intro, .feature-card, .uses-heading, .use-tile, .experience-copy, .experience-panel, .philosophy-inner, .waitlist-inner');
+    const items = document.querySelectorAll('.reveal-on-scroll');
     const observer = new IntersectionObserver((entries) => entries.forEach((entry) => {
       if (entry.isIntersecting) {
         entry.target.classList.add('is-visible');
