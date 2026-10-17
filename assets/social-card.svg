@@ -1,1 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630"><defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#f8f7f4"/><stop offset="1" stop-color="#e3d7c8"/></linearGradient><radialGradient id="gl"><stop stop-color="#fff"/><stop offset=".7" stop-color="#b7c8e8"/><stop offset="1" stop-color="#9dacc9"/></radialGradient></defs><rect width="1200" height="630" fill="url(#bg)"/><circle cx="880" cy="315" r="240" fill="url(#gl)" opacity=".8"/><ellipse cx="880" cy="315" rx="305" ry="95" fill="none" stroke="#fff" stroke-width="3" transform="rotate(-20 880 315)"/><rect x="760" y="235" width="240" height="160" rx="80" fill="#24334b" stroke="#fff" stroke-width="11"/><ellipse cx="837" cy="315" rx="23" ry="41" fill="#ddf6ff"/><ellipse cx="920" cy="315" rx="23" ry="41" fill="#ddf6ff"/><text x="72" y="112" font-family="Arial,sans-serif" font-size="48" font-weight="bold" fill="#171c29">guardian.</text><text x="72" y="292" font-family="Arial,sans-serif" font-size="71" font-weight="bold" fill="#171c29">Your world.</text><text x="72" y="375" font-family="Arial,sans-serif" font-size="71" font-weight="bold" fill="#8c857f">A little more brilliant.</text><text x="72" y="480" font-family="Arial,sans-serif" font-size="25" fill="#4b5566">Your personal superintelligence is coming.</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630">
+<defs>
+ <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#fbfaf7"/><stop offset=".56" stop-color="#f0f1f1"/><stop offset="1" stop-color="#e4eaf4"/></linearGradient>
+ <radialGradient id="orb" cx=".31" cy=".24" r=".85"><stop stop-color="#ffffff"/><stop offset=".44" stop-color="#e4edf6"/><stop offset=".83" stop-color="#b8cde1"/><stop offset="1" stop-color="#a7bcd3"/></radialGradient>
+ <radialGradient id="cheek"><stop stop-color="#f8adb8" stop-opacity=".7"/><stop offset="1" stop-color="#f8adb8" stop-opacity="0"/></radialGradient>
+ <linearGradient id="face" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#526989"/><stop offset=".52" stop-color="#2b3e59"/><stop offset="1" stop-color="#1d2d44"/></linearGradient>
+ <filter id="shadow"><feGaussianBlur stdDeviation="21"/></filter>
+</defs>
+<rect width="1200" height="630" fill="url(#bg)"/>
+<circle cx="877" cy="313" r="235" fill="#879cb7" opacity=".25" filter="url(#shadow)"/>
+<circle cx="877" cy="294" r="216" fill="url(#orb)" stroke="#ffffff" stroke-width="5"/>
+<ellipse cx="877" cy="294" rx="265" ry="86" fill="none" stroke="#fefdfb" stroke-opacity=".95" stroke-width="3" transform="rotate(-18 877 294)"/>
+<ellipse cx="877" cy="294" rx="265" ry="86" fill="none" stroke="#d7bcab" stroke-opacity=".55" stroke-width="2" transform="rotate(18 877 294)"/>
+<rect x="766" y="232" width="222" height="135" rx="58" fill="url(#face)" stroke="#ffffff" stroke-width="9"/>
+<ellipse cx="831" cy="295" rx="19" ry="28" fill="#f3fbff"/><ellipse cx="922" cy="295" rx="19" ry="28" fill="#f3fbff"/>
+<ellipse cx="827" cy="293" rx="10" ry="15" fill="#75b0d7"/><ellipse cx="918" cy="293" rx="10" ry="15" fill="#75b0d7"/>
+<circle cx="824" cy="287" r="4" fill="#fff"/><circle cx="915" cy="287" r="4" fill="#fff"/>
+<ellipse cx="780" cy="335" rx="30" ry="16" fill="url(#cheek)"/><ellipse cx="974" cy="335" rx="30" ry="16" fill="url(#cheek)"/>
+<path d="M866 338 Q877 346 888 338" fill="none" stroke="#d6eeff" stroke-width="4" stroke-linecap="round"/>
+<text x="88" y="123" font-family="Arial, Helvetica, sans-serif" font-size="39" font-weight="700" fill="#263040">Guardian</text>
+<circle cx="98" cy="168" r="5" fill="#99bda5"/>
+<text x="114" y="173" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="3" fill="#8d9dae">COMING SOON</text>
+<text x="88" y="285" font-family="Arial, Helvetica, sans-serif" font-size="67" font-weight="700" fill="#252d39">More room for</text>
+<text x="88" y="361" font-family="Arial, Helvetica, sans-serif" font-size="67" font-weight="700" fill="#8499b5">what matters.</text>
+<text x="88" y="441" font-family="Arial, Helvetica, sans-serif" font-size="23" fill="#667487">Your intelligent personal companion.</text>
+<text x="88" y="470" font-family="Arial, Helvetica, sans-serif" font-size="23" fill="#667487">Less mental clutter. More real life.</text>
+</svg>
