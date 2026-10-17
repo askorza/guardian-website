@@ -29,3 +29,59 @@
 @media(max-width:830px){.container{width:calc(100% - 42px)}.nav-shell{height:80px}.mobile-menu-toggle{display:block;order:3}.nav-links{display:none;position:absolute;top:72px;left:20px;right:20px;background:#fffefcf5;border:1px solid #ece5e1;box-shadow:0 15px 45px #92939324;border-radius:22px;padding:24px;flex-direction:column;align-items:flex-start;gap:20px;z-index:30}.nav-links.is-open{display:flex}.nav-cta{margin-left:auto}.hero{display:flex;flex-direction:column;text-align:center;min-height:0;padding:55px 0 65px}.hero-copy{margin:0}.hero h1{max-width:700px;font-size:clamp(45px,7vw,66px);margin-inline:auto}.hero-lead{margin-inline:auto}.hero-actions,.hero-footnote{justify-content:center}.hero-visual{width:100%;max-width:650px;height:550px;margin-top:5px}.hero-bottom{position:static;width:100%;margin-top:10px}.section-intro,.uses-heading{display:block}.section-intro .section-kicker{position:static;transform:none}.intro-section{padding-top:95px}.features-grid{gap:12px}.feature-card{padding:17px;min-height:405px}.feature-art{height:260px}.feature-copy h3{font-size:18px}.feature-copy p{font-size:12px}.experience-grid{grid-template-columns:1fr;gap:38px}.experience-panel{margin:auto}.uses-grid{grid-template-columns:repeat(2,1fr)}.uses-heading>p{max-width:500px}.section{padding-block:90px}}
 @media(max-width:580px){.container{width:calc(100% - 34px)}.nav-shell{height:72px}.brand{font-size:24px}.nav-cta{font-size:10px;padding:10px 11px}.nav-cta span{padding-left:2px}.hero{padding-top:43px;padding-bottom:47px}.hero h1{font-size:clamp(42px,10vw,56px);letter-spacing:-2.7px}.hero-lead{font-size:14px;line-height:1.7}.eyebrow{margin-bottom:23px}.hero-actions{gap:8px}.button{font-size:11px;padding:12px 15px}.hero-footnote{margin-top:24px}.hero-visual{height:410px;margin-top:0;overflow:hidden;margin-inline:-12px;width:calc(100% + 24px)}.orb-glass{width:74%;max-width:340px}.guardian-head{width:133px;height:101px;padding:7px}.eyes{gap:20px}.eye{width:20px;height:35px}.orbit-outer{width:380px;height:150px}.orbit-inner{width:350px;height:110px}.orbit-card{min-width:105px;max-width:129px;gap:6px;padding:8px 9px;border-radius:12px}.orbit-card-symbol{width:22px;height:22px;font-size:13px;border-radius:7px}.orbit-card strong{font-size:8px;margin-bottom:2px}.orbit-card small{font-size:7px}.orbit-card-a{left:6px;top:15px}.orbit-card-b{right:6px;top:108px}.orbit-card-c{left:7px;bottom:82px}.globe-controller{bottom:12px;padding:4px 6px;gap:10px}.circle-button{height:28px;width:28px;font-size:15px}.globe-controller-label{font-size:8px;letter-spacing:1px}.hero-bottom{font-size:7px;letter-spacing:1.2px}.hero-bottom span:last-child{display:none}.ribbon-track{gap:24px;padding:18px 0;font-size:9px}.section{padding-block:73px}.section h2{font-size:39px;letter-spacing:-2.4px}.features-grid{grid-template-columns:1fr}.feature-card{min-height:340px;padding:21px}.feature-art{height:200px}.feature-copy h3{font-size:21px}.feature-copy p{font-size:13px}.feature-number{font-size:9px}.brain-gem{font-size:85px}.art-float-one{left:45px;top:38px}.art-float-two{right:32px;bottom:23px}.experience-panel{padding:17px}.chat-dialogue{min-height:255px}.uses-grid{gap:10px}.use-tile{padding:10px 10px 17px}.use-illustration{height:140px}.use-tile h3{font-size:14px}.use-tile p{font-size:11px}.waitlist-section{padding-block:100px 80px}.waitlist-section h2{font-size:44px}.waitlist-form{border-radius:24px;padding:6px;display:flex;flex-direction:column}.waitlist-form input[type=email]{height:42px;text-align:center}.waitlist-form button{padding:13px}.waitlist-decor{display:none}.site-footer{padding-top:34px}.footer-bottom{flex-wrap:wrap;gap:16px}.footer-bottom a:nth-last-child(2){margin-left:0}.footer-bottom span{width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.ribbon-track{animation:none}.reveal{opacity:1;transform:none}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* Guardian alive — visible reactive eyes, tiny personality, translucent demo companion. */
+.brand-robot .mini-eye{transform:translate3d(var(--eye-x,0px),var(--eye-y,0px),0);transition:transform .11s ease-out}
+.guardian-head{pointer-events:none;will-change:transform}
+.guardian-head .head-inner{background:radial-gradient(ellipse at 40% 0%,#465c7b 0%,#263a59 43%,#18243b 100%)}
+/* Deliberately leave free space in the socket, so following is clearly visible. */
+.guardian-head .eye{
+  width:30px;height:48px;border-radius:50%;overflow:hidden;position:relative;
+  background:radial-gradient(ellipse at 42% 32%,#effbff 5%,#d2e9ff 55%,#bad3f0 100%);
+  box-shadow:inset 0 2px 8px #7faedc82,0 0 15px #9bd6ffba,0 0 32px #8ab8f47b;
+  transform-origin:center center;
+}
+.guardian-head .eye .pupil{
+  position:absolute;inset:auto;top:50%;left:50%;height:25px;width:15px;border-radius:48%;
+  background:radial-gradient(ellipse at 40% 28%,#a9efff 0%,#65afff 42%,#427ab8 80%,#294c84 100%);
+  box-shadow:0 0 11px #73bffcaa,inset 1px 2px 3px #efffff8a;
+  transform:translate3d(calc(-50% + var(--eye-x,0px)),calc(-50% + var(--eye-y,0px)),0);
+  transition:none;
+  will-change:transform;
+}
+.guardian-head .eye .pupil:after,.guardian-cloud .pupil:after,.philosophy-eyes .pupil:after{
+  content:"";position:absolute;left:24%;top:12%;width:30%;height:24%;border-radius:50%;background:#fffefa;box-shadow:0 0 4px #fff;
+}
+.guardian-face.blinking .eye{animation:guardian-real-blink .22s ease-in-out 1}
+@keyframes guardian-real-blink{0%,100%{transform:scaleY(1)}45%{transform:scaleY(.065)}65%{transform:scaleY(.065)}}
+/* A little living cloud in the illustrative chat experience. */
+.experience-panel{overflow:hidden;position:relative;isolation:isolate}
+.companion-preview{height:126px;position:relative;display:flex;align-items:center;justify-content:center;pointer-events:none;margin:9px 0 -2px;isolation:isolate}
+.companion-preview:before{content:"";position:absolute;z-index:-2;width:295px;height:116px;border-radius:50%;background:radial-gradient(ellipse,#cbdff39e 0%,#f9e9dd69 42%,transparent 73%);filter:blur(13px)}
+.preview-orbit{position:absolute;width:250px;height:67px;border:1px solid #b2c9e287;border-radius:50%;transform:rotate(-14deg);box-shadow:0 0 17px #fff inset,0 4px 16px #d6e4f166}
+.preview-twinkle{position:absolute;font-size:22px;color:#a9a0bc;text-shadow:0 0 10px white;animation:guardian-twinkle 5s ease-in-out infinite}
+.twinkle-one{left:17%;top:18%;font-size:18px}.twinkle-two{right:23%;bottom:12%;animation-delay:1.8s;color:#b8cbea}
+.guardian-cloud{width:148px;height:91px;position:relative;display:grid;place-items:center;filter:drop-shadow(0 11px 15px #8cabc450);animation:guardian-cloud-float 5.5s ease-in-out infinite}
+.guardian-cloud:before{content:"";position:absolute;z-index:-1;inset:-5px -7px -3px;border:1.3px solid #ffffffec;border-radius:45% 48% 42% 50%/53% 54% 45% 48%;background:linear-gradient(140deg,#ffffffec 0%,#eff6ffb6 37%,#d7e8f5ba 70%,#ffefdbb5 100%);box-shadow:inset 3px 7px 13px #ffffffbb,inset -3px -7px 14px #91b5d56b,0 7px 22px #b1c8db3d;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.guardian-cloud:after{content:"";position:absolute;left:27px;bottom:-10px;width:28px;height:28px;background:linear-gradient(135deg,#e8f2ffcf,#e1ebf2e0);border-left:1px solid #fff;border-bottom:1px solid #fff;transform:rotate(-38deg) skew(-10deg);border-radius:6px;z-index:-2}
+.guardian-cloud-face{position:relative;background:radial-gradient(ellipse at 50% 0%,#485973,#253550 65%,#19243a);width:96px;height:55px;border-radius:28px;border:3px solid #f5faff;box-shadow:0 6px 14px #6a8aab60,inset 0 3px 8px #161f3ca0,0 0 13px #ffffffdd;display:grid;place-items:center;transform:rotate(var(--face-tilt,0deg));will-change:transform}
+.cloud-eyes{display:flex;align-items:center;justify-content:center;gap:17px}
+.guardian-cloud .eye{display:block;position:relative;width:16px;height:24px;border-radius:60%;background:radial-gradient(ellipse at 45% 25%,#f6fdff,#caeaff 60%,#9acbf9);box-shadow:0 0 9px #b3e9ff,0 0 17px #8abbea6b;overflow:hidden;transform-origin:center}
+.guardian-cloud .pupil{position:absolute;top:50%;left:50%;width:9px;height:14px;border-radius:50%;background:radial-gradient(ellipse at 40% 35%,#92eaff,#579cf4 60%,#3767b2);box-shadow:0 0 6px #a2dcff;transform:translate3d(calc(-50% + var(--eye-x,0px)),calc(-50% + var(--eye-y,0px)),0);will-change:transform}
+.cloud-blush{position:absolute;bottom:10px;width:11px;height:4px;border-radius:50%;background:#ffc1cb83;filter:blur(1px)}.blush-one{left:6px}.blush-two{right:6px}
+.preview-greeting{position:absolute;right:9%;bottom:21px;transform:rotate(-6deg);font:700 10px var(--font-head);letter-spacing:.25px;color:#8094ae;opacity:.88}
+.preview-greeting span{color:#b48f9e;font-size:14px}
+@keyframes guardian-cloud-float{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(2deg)}}
+@keyframes guardian-twinkle{0%,100%{opacity:.45;transform:scale(.85)}55%{opacity:1;transform:scale(1.15)}}
+.experience-panel .chat-dialogue{padding-top:15px;min-height:234px}
+/* The third Guardian face is also alive. */
+.philosophy-robot.guardian-face{will-change:transform;transform:rotate(-8deg)}
+.philosophy-robot .philosophy-eyes .eye{position:relative;width:15px;height:27px;display:block;background:radial-gradient(ellipse at 50% 30%,#eafaff,#b7d9f0);box-shadow:0 0 8px #9ad6ff,0 0 15px #7abff15e;overflow:hidden;border-radius:50%;transform-origin:center}
+.philosophy-robot .philosophy-eyes .pupil{position:absolute;left:50%;top:50%;width:9px;height:16px;border-radius:48%;background:#6ba9e2;box-shadow:0 0 8px #a8daff;transform:translate3d(calc(-50% + var(--eye-x,0px)),calc(-50% + var(--eye-y,0px)),0)}
+@media(max-width:580px){.guardian-head .eye{width:22px;height:35px}.guardian-head .eye .pupil{width:11px;height:19px}.companion-preview{height:122px}.preview-greeting{right:1%;bottom:9px}.experience-panel .chat-dialogue{min-height:229px}}
+@media(prefers-reduced-motion:reduce){.guardian-cloud,.preview-twinkle{animation:none!important}.guardian-face .eye,.brand-robot .mini-eye{transition:none!important}}
+
+/* A tiny excited bounce when a demo topic is selected. */
+.guardian-cloud.reacting{animation:guardian-cloud-happy .6s cubic-bezier(.25,.9,.25,1) 1}
+@keyframes guardian-cloud-happy{0%,100%{transform:translateY(0) rotate(-3deg)}36%{transform:translateY(-15px) rotate(6deg)}70%{transform:translateY(-5px) rotate(-7deg)}}
+@media(prefers-reduced-motion:reduce){.guardian-cloud.reacting{animation:none}}
