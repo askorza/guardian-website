@@ -198,7 +198,7 @@
     if (e.key === 'ArrowLeft') { e.preventDefault(); rotateFeature(-1); }
   });
   globeArea?.addEventListener('pointerdown', (e) => {
-    if (e.target.closest('button')) return;
+    if (e.target.closest('button, .orbit-card')) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     isDragging = true;
     totalDragged = 0;
@@ -441,6 +441,7 @@
     storySteps.forEach((step, i) => step.classList.toggle('is-active', i == index));
     storyPanels.forEach((panel, i) => panel.classList.toggle('is-active', i == index));
     if (storyProgress) storyProgress.style.width = `${((index + 1) / Math.max(1, storySteps.length)) * 100}%`;
+    document.querySelectorAll('.story-pagination span').forEach((dot,i)=>dot.classList.toggle('is-active',i===index));
   }
   storySteps.forEach((step, index) => {
     step.addEventListener('click', () => setActiveStory(index));
