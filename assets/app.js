@@ -8,17 +8,17 @@
   const canvas = byId('globe-canvas');
   const head = byId('guardian-head');
   const options = [
+    { icon: '⌁', name: 'Research a topic', caption: 'Go deeper, find the useful signal' },
+    { icon: '◷', name: 'Organize your time', caption: 'Make your day feel lighter' },
+    { icon: '✓', name: 'Homework help', caption: 'Learn it honestly, not just finish it' },
     { icon: '✦', name: 'Plan your week', caption: 'A clearer path to what matters' },
     { icon: '◈', name: 'Explore ideas', caption: 'Fresh angles on big questions' },
     { icon: '◎', name: 'Remember details', caption: 'Context you choose to keep' },
     { icon: '✉', name: 'Draft a reply', caption: 'Find just the right words' },
-    { icon: '⌁', name: 'Research a topic', caption: 'Go deeper, find the signal' },
-    { icon: '◷', name: 'Organize your time', caption: 'Make your day feel lighter' },
     { icon: '✳', name: 'Create together', caption: 'From first spark to final draft' },
-    { icon: '✓', name: 'Manage next steps', caption: 'A little less to juggle' },
     { icon: '◇', name: 'Explore the world', caption: 'Think through your next trip' }
   ];
-  let active = 0;
+  let active = 1;
   const wrapIndex = (n) => (n + options.length) % options.length;
 
   function showOptions(animate = true) {
@@ -35,6 +35,10 @@
       byId(`${prefix}-icon`).textContent = option.icon;
       byId(`${prefix}-title`).textContent = option.name;
       byId(`${prefix}-caption`).textContent = option.caption;
+      card.dataset.offset = String(offset);
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-label', `Explore ${option.name}`);
     });
     globeArea.setAttribute('aria-label', `Interactive rotating Guardian globe. Currently exploring ${options[active].name}. Drag or use arrow keys to explore more.`);
   }
@@ -174,6 +178,20 @@
 
   byId('globe-next')?.addEventListener('click', () => rotateFeature(1));
   byId('globe-prev')?.addEventListener('click', () => rotateFeature(-1));
+  document.querySelectorAll('.orbit-card').forEach((card) => {
+    const activateCard = () => {
+      const offset = Number(card.dataset.offset || 0);
+      if (!Number.isFinite(offset) || offset === 0) return;
+      rotateFeature(offset);
+    };
+    card.addEventListener('click', activateCard);
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activateCard();
+      }
+    });
+  });
 
   globeArea?.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') { e.preventDefault(); rotateFeature(1); }
@@ -381,9 +399,9 @@
 
   // Illustrative, explicitly non-live chat examples.
   const dialogue = {
-    idea: ["I have a big idea, but I'm not sure where to start.", "Let's make it feel manageable. We can begin with the big picture, then choose one small step that creates momentum."],
-    plan: ["My week is a little overwhelming.", "Let's find your three priorities, protect some focus time, and leave room for the unexpected."],
-    learn: ["Can you help me understand something complicated?", "Absolutely. We'll break it down clearly, explore different perspectives, and take it at your pace."]
+    homework: ["I need help with homework, but I still want it to sound like me.", "Absolutely. I can explain it step by step, help you think it through, and keep the work honest so you actually learn it."],
+    plan: ["My day is getting messy and I need a reset.", "Let's keep it simple. We can sort out your priorities, make a plan for today, and leave a little room to breathe."],
+    research: ["Can you help me research a topic without making it overwhelming?", "Yes. I'll pull out the key ideas, compare perspectives, and turn the messy part into something clear and useful."]
   };
   const chat = byId('chat-dialogue');
   document.querySelectorAll('.prompt-chip').forEach((chip) => chip.addEventListener('click', () => {
@@ -404,7 +422,7 @@
     ai.append(star, answer);
     chat.append(user, ai);
     const cloud = byId('guardian-cloud');
-    surpriseFace(cloud, chip.dataset.prompt === 'idea' ? 'Ooh, big ideas! ✦' : chip.dataset.prompt === 'plan' ? 'We can do this! ♡' : 'Let’s get curious ✳');
+    surpriseFace(cloud, chip.dataset.prompt === 'homework' ? 'We’ll learn it together ✦' : chip.dataset.prompt === 'plan' ? 'We can do this ♡' : 'Let’s dig in ✳');
     cloud?.classList.remove('reacting');
     if (cloud && !prefersReducedMotion) {
       void cloud.offsetWidth;
@@ -412,6 +430,29 @@
       window.setTimeout(() => cloud.classList.remove('reacting'), 640);
     }
   }));
+
+
+
+  // Scroll storytelling for the sticky narrative section.
+  const storySteps = [...document.querySelectorAll('[data-story-step]')];
+  const storyPanels = [...document.querySelectorAll('[data-story-panel]')];
+  const storyProgress = byId('story-progress-bar');
+  function setActiveStory(index) {
+    storySteps.forEach((step, i) => step.classList.toggle('is-active', i == index));
+    storyPanels.forEach((panel, i) => panel.classList.toggle('is-active', i == index));
+    if (storyProgress) storyProgress.style.width = `${((index + 1) / Math.max(1, storySteps.length)) * 100}%`;
+  }
+  storySteps.forEach((step, index) => {
+    step.addEventListener('click', () => setActiveStory(index));
+  });
+  if ('IntersectionObserver' in window && storySteps.length) {
+    const storyObserver = new IntersectionObserver((entries) => {
+      const visible = entries.filter(entry => entry.isIntersecting)
+        .sort((a, b) => Math.abs(a.boundingClientRect.top) - Math.abs(b.boundingClientRect.top));
+      if (visible[0]) setActiveStory(Number(visible[0].target.dataset.storyStep || 0));
+    }, { threshold: 0.55, rootMargin: '-10% 0px -30% 0px' });
+    storySteps.forEach((step) => storyObserver.observe(step));
+  }
 
   // Real waitlist API endpoint, backed by Cloudflare Pages Functions + D1.
   // This deliberately does NOT claim a successful signup when the API is unavailable.
