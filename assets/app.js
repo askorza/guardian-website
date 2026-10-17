@@ -53,6 +53,7 @@
   let pointerStart = null;
   let totalDragged = 0;
   let dragIndex = 0;
+  let pointerDownPosition = null;
   let frame = 0;
   let lastGlobePaint = 0;
   let globeInView = true;
@@ -185,6 +186,7 @@
     totalDragged = 0;
     pointerStart = { x: e.clientX, y: e.clientY, initialLongitude: globe.aimLongitude, initialLatitude: globe.aimLatitude };
     dragIndex = active;
+    pointerDownPosition = { x: e.clientX, y: e.clientY, onHead: !!head && (() => { const r = head.getBoundingClientRect(); return e.clientX >= r.left - 12 && e.clientX <= r.right + 12 && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12; })() };
     globe.interaction = performance.now();
     globeArea.classList.add('dragging');
     globeArea.setPointerCapture(e.pointerId);
@@ -201,8 +203,11 @@
     const next = wrapIndex(dragIndex + steps);
     if (next !== active) { active = next; showOptions(); }
   });
-  const endDrag = () => { isDragging = false; pointerStart = null; globeArea?.classList.remove('dragging'); };
-  globeArea?.addEventListener('pointerup', endDrag);
+  const endDrag = () => { isDragging = false; pointerStart = null; pointerDownPosition = null; globeArea?.classList.remove('dragging'); };
+  globeArea?.addEventListener('pointerup', (e) => {
+    if (pointerDownPosition?.onHead && Math.hypot(e.clientX - pointerDownPosition.x, e.clientY - pointerDownPosition.y) < 15) surpriseFace(head);
+    endDrag();
+  });
   globeArea?.addEventListener('pointercancel', endDrag);
   globeArea?.addEventListener('lostpointercapture', endDrag);
 
@@ -215,18 +220,60 @@
     range: Number(node.dataset.gaze) || 6,
     x: 0,
     y: 0,
+    mood: 'curious',
+    lockedUntil: 0,
     blinkAt: performance.now() + 1800 + index * 1150,
     idlePhase: index * 1.37
   }));
   const brandEyes = [...document.querySelectorAll('.brand-robot')];
   let pointer = null;
+  let lastActivity = performance.now();
+  let heroTipUntil = 0;
+  let cloudTipUntil = 0;
+  const heroTip = byId('hero-face-thought');
+  const cloudTip = byId('cloud-thought');
+  const cloudButton = byId('guardian-cloud');
+
+  function showThought(node, message, until) {
+    if (!node) return;
+    node.textContent = message;
+    node.classList.add('is-visible');
+    if (node === heroTip) heroTipUntil = until;
+    if (node === cloudTip) cloudTipUntil = until;
+  }
+
+  function surpriseFace(node, label) {
+    const face = faces.find((entry) => entry.node === node || entry.node.contains(node) || node.contains(entry.node));
+    if (!face) return;
+    const now = performance.now();
+    lastActivity = now;
+    face.lockedUntil = now + 1350;
+    setMood(face, 'surprised');
+    if (face.node === head) showThought(heroTip, label || 'Oh! Hi there! ✦', now + 2100);
+    if (face.node.dataset.personality === 'cloud') showThought(cloudTip, label || 'You found me! ♡', now + 2100);
+  }
+
+  function setMood(face, mood) {
+    if (face.mood === mood) return;
+    face.node.classList.remove('mood-happy', 'mood-curious', 'mood-sleepy', 'mood-surprised');
+    face.node.classList.add(`mood-${mood}`);
+    face.mood = mood;
+  }
+  faces.forEach((face) => setMood(face, 'happy'));
 
   window.addEventListener('pointermove', (event) => {
+    lastActivity = performance.now();
     if (event.pointerType === 'mouse' || event.pointerType === 'pen') {
       pointer = { x: event.clientX, y: event.clientY };
     }
   }, { passive: true });
+  window.addEventListener('keydown', () => { lastActivity = performance.now(); }, { passive: true });
+  window.addEventListener('pointerdown', () => { lastActivity = performance.now(); }, { passive: true });
+  window.addEventListener('touchstart', () => { lastActivity = performance.now(); }, { passive: true });
   window.addEventListener('blur', () => { pointer = null; });
+  cloudButton?.addEventListener('click', () => surpriseFace(cloudButton, 'You made me smile! ♡'));
+  cloudButton?.addEventListener('pointerenter', () => { lastActivity = performance.now(); showThought(cloudTip, 'Psst... say hello! ✳', performance.now() + 2400); });
+  globeArea?.addEventListener('dblclick', (e) => { if (!e.target.closest('button')) surpriseFace(head, 'Double hello! ✨'); });
   document.addEventListener('pointerout', (event) => {
     if (!event.relatedTarget) pointer = null;
   }, { passive: true });
@@ -236,10 +283,19 @@
     // the globe and the demo. Short idle glances make Guardian feel curious.
     for (const face of faces) {
       let targetX = 0, targetY = 0;
-      if (pointer && finePointer) {
-        const rect = face.node.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
+      const rect = face.node.getBoundingClientRect();
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const nearby = !!pointer && finePointer &&
+        Math.abs(pointer.x - cx) < Math.max(110, rect.width * .9) &&
+        Math.abs(pointer.y - cy) < Math.max(85, rect.height * 1.15);
+      const sleeping = now - lastActivity > 18500;
+      if (now >= face.lockedUntil) {
+        if (sleeping) setMood(face, 'sleepy');
+        else if (nearby) setMood(face, 'happy');
+        else setMood(face, 'curious');
+      }
+      if (pointer && finePointer && !sleeping) {
         // tanh keeps the pupil inside its socket while offering a clear gaze.
         targetX = Math.tanh((pointer.x - cx) / Math.max(82, rect.width * .72));
         targetY = Math.tanh((pointer.y - cy) / Math.max(78, rect.height * 1.1));
@@ -255,7 +311,7 @@
       face.node.style.setProperty('--eye-y', `${(face.y * face.range * .68).toFixed(2)}px`);
       face.node.style.setProperty('--face-tilt', `${(face.x * 3.5).toFixed(2)}deg`);
 
-      if (!prefersReducedMotion && now > face.blinkAt) {
+      if (!prefersReducedMotion && !sleeping && face.mood !== 'surprised' && now > face.blinkAt) {
         face.node.classList.remove('blinking');
         void face.node.offsetWidth;
         face.node.classList.add('blinking');
@@ -263,6 +319,8 @@
         window.setTimeout(() => face.node.classList.remove('blinking'), 230);
       }
     }
+    if (heroTip && now > heroTipUntil) heroTip.classList.remove('is-visible');
+    if (cloudTip && now > cloudTipUntil) cloudTip.classList.remove('is-visible');
     if (head) {
       const hero = faces.find(face => face.node === head);
       if (hero) head.style.transform = `translate(-50%,-50%) rotate(${(hero.x * 3.5).toFixed(2)}deg)`;
@@ -306,10 +364,7 @@
   // Faces must not depend on WebGL/canvas availability.
   requestAnimationFrame(tick);
   showOptions(false);
-  if (head && !prefersReducedMotion) {
-    const blink = () => { head.classList.add('blinking'); setTimeout(() => head.classList.remove('blinking'), 220); };
-    setInterval(blink, 4700);
-  }
+  // Blink scheduling is centralized in animateFaces to avoid duplicate blinks.
 
   // Mobile navigation.
   const toggle = byId('menu-toggle'), links = byId('nav-links');
@@ -349,6 +404,7 @@
     ai.append(star, answer);
     chat.append(user, ai);
     const cloud = byId('guardian-cloud');
+    surpriseFace(cloud, chip.dataset.prompt === 'idea' ? 'Ooh, big ideas! ✦' : chip.dataset.prompt === 'plan' ? 'We can do this! ♡' : 'Let’s get curious ✳');
     cloud?.classList.remove('reacting');
     if (cloud && !prefersReducedMotion) {
       void cloud.offsetWidth;
