@@ -6,7 +6,7 @@ Responsive, premium landing page for **Guardian**, a future personal AI assistan
 
 - No paid library or build step required. HTML, CSS and vanilla JavaScript.
 - Interactive canvas-rendered sphere with simplified public-domain Natural Earth coastline data, drag + keyboard arrow + touch and on-screen arrow controls.
-- Guardian's robot eyes follow the cursor and blink. Reduced-motion preferences respected.
+- Guardian's robotic eyes track the cursor, blink, smile on hover, look surprised when clicked, and drift to sleep after inactivity. Animated cloud companion responds to the illustrative dialogue. Reduced-motion preferences respected.
 - Responsive desktop and mobile design, accessible labels and keyboard controls.
 - Illustrated feature cards and click-to-switch example chat interactions. **This is a marketing preview, not a live AI assistant.**
 - Cloudflare Pages Function endpoint `/api/waitlist`, storing deduplicated emails in a D1 database **once configured**.
@@ -21,6 +21,18 @@ python3 -m http.server 8080
 ```
 
 Open `http://localhost:8080`. Globe and other interactions work without any server-side setup. The email signup **will not work** until a Cloudflare D1 database and Pages Function are deployed.
+
+
+## Launch on GitHub Pages (static preview)
+
+This is the quickest **free public demo** for `askorza/guardian-website`:
+
+1. Go to **https://github.com/askorza/guardian-website/settings/pages**.
+2. Under **Build and deployment**, choose **Deploy from a branch**.
+3. Select **main**, then **/(root)**, and click **Save**.
+4. Once deployed, visit **https://askorza.github.io/guardian-website/** (it may take several minutes).
+
+GitHub Pages only serves static files: the globe, animations and illustrative conversations work, but the **waitlist does not accept signups on GitHub Pages**. For working signups, use Cloudflare Pages + D1 as below or integrate another backend. The form deliberately reports that signups are not live when no backend exists.
 
 ## Publish using GitHub + Cloudflare Pages
 
