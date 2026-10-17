@@ -43,11 +43,47 @@
     globeArea.setAttribute('aria-label', `Interactive rotating Guardian globe. Currently exploring ${options[active].name}. Drag or use arrow keys to explore more.`);
   }
 
+  const orbitSlots = [byId('orbit-card-a'), byId('orbit-card-b'), byId('orbit-card-c')].filter(Boolean);
+  function positionOrbitCards() {
+    if (!globeArea || !orbitSlots.length) return;
+    const rect = globeArea.getBoundingClientRect();
+    const cx = rect.width * 0.5;
+    const cy = rect.height * 0.47;
+    const isMobile = rect.width < 560;
+    const rx = Math.min(rect.width * (isMobile ? 0.37 : 0.405), isMobile ? 152 : 246);
+    const ry = Math.min(rect.height * (isMobile ? 0.285 : 0.312), isMobile ? 104 : 158);
+    const base = globe.cardAngle * 0.96 - 0.58;
+    const offsets = [-2.22, -0.02, 2.08];
+    orbitSlots.forEach((card, index) => {
+      const a = base + offsets[index];
+      const ex = Math.cos(a), ey = Math.sin(a);
+      const depth = (ey + 1) / 2;
+      const x = cx + rx * ex;
+      const y = cy + ry * ey * 0.97;
+      const scale = 0.83 + depth * 0.2;
+      const opacity = 0.58 + depth * 0.4;
+      const rotate = ex * 5.3;
+      const blur = (1 - depth) * 1.4;
+      const lift = (depth - 0.5) * 6;
+      card.style.setProperty('--card-x', `${x.toFixed(1)}px`);
+      card.style.setProperty('--card-y', `${(y - lift).toFixed(1)}px`);
+      card.style.setProperty('--card-scale', scale.toFixed(3));
+      card.style.setProperty('--card-rotate', `${rotate.toFixed(2)}deg`);
+      card.style.setProperty('--card-opacity', opacity.toFixed(3));
+      card.style.setProperty('--card-blur', `${blur.toFixed(2)}px`);
+      card.style.setProperty('--card-shadow-y', `${(18 + depth * 24).toFixed(1)}px`);
+      card.style.zIndex = String(5 + Math.round(depth * 10));
+      card.classList.toggle('is-front', depth > 0.72);
+      card.classList.toggle('is-back', depth < 0.34);
+    });
+  }
+
   const globe = {
     longitude: -0.38,
     latitude: 0.17,
     aimLongitude: -0.38,
     aimLatitude: 0.17,
+    cardAngle: -0.38,
     last: 0,
     size: 0,
     dpr: 1,
@@ -360,7 +396,9 @@
     const easing = prefersReducedMotion ? 1 : .075;
     globe.longitude += (globe.aimLongitude - globe.longitude) * easing;
     globe.latitude += (globe.aimLatitude - globe.latitude) * easing;
+    globe.cardAngle += (globe.longitude - globe.cardAngle) * (prefersReducedMotion ? 1 : .11);
     animateFaces(now);
+    positionOrbitCards();
     // Complex cartography is expensive. Paint the globe at ~24fps only while visible;
     // the eyes update independently at the browser's animation cadence.
     if ((!prefersReducedMotion || frame++ < 4) && globeInView && now - lastGlobePaint > 42) {
@@ -378,10 +416,12 @@
     if ('ResizeObserver' in window) new ResizeObserver(resizeCanvas).observe(canvas);
     window.addEventListener('resize', resizeCanvas, { passive: true });
     resizeCanvas();
+    positionOrbitCards();
   }
   // Faces must not depend on WebGL/canvas availability.
   requestAnimationFrame(tick);
   showOptions(false);
+  positionOrbitCards();
   // Blink scheduling is centralized in animateFaces to avoid duplicate blinks.
 
   // Mobile navigation.
