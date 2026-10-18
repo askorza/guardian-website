@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex,nofollow,noarchive"><meta name="theme-color" content="#f7f8f7">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src http://127.0.0.1:8787; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Talk to Guardian · Private preview</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="talk.css">
   <script defer src="../vault-core.js"></script><script defer src="talk.js"></script>
@@ -11,10 +11,10 @@
 <body>
   <header class="topbar">
     <a class="brand" href="../"><span class="brand-mark" aria-hidden="true"><i></i><i></i></span>guardian<span class="brand-dot">.</span></a>
-    <div class="topright"><span class="mode-pill"><span class="pulse-dot"></span> Local preview</span><a href="../" class="nav-vault">My vault <span aria-hidden="true">↗</span></a></div>
+    <div class="topright"><span class="mode-pill"><span class="pulse-dot"></span> Private beta</span><a href="../" class="nav-vault">My vault <span aria-hidden="true">↗</span></a></div>
   </header>
   <main class="shell">
-    <div class="intro"><div><div class="eyebrow">A LITTLE MORE HUMAN</div><h1>Someone to <em>talk to.</em></h1><p>Say what's on your mind. Guardian listens, responds, and — when your vault is unlocked — keeps your conversation encrypted on your device.</p></div><div class="intro-safety"><span class="tiny-lock">♧</span> Private by design<span class="safety-sub">Browser voice · encrypted Markdown · no AI provider connected</span></div></div>
+    <div class="intro"><div><div class="eyebrow">A LITTLE MORE HUMAN</div><h1>Someone to <em>talk to.</em></h1><p>Say what's on your mind. Guardian listens, responds, and — when your vault is unlocked — keeps your conversation encrypted on your device.</p></div><div class="intro-safety"><span class="tiny-lock">♧</span> Private by design<span class="safety-sub">Browser voice · encrypted Markdown · optional local AI test</span></div></div>
     <div class="talk-grid">
       <section class="companion" aria-label="Guardian animated companion">
         <div class="world-ring ring-a"></div><div class="world-ring ring-b"></div>
@@ -50,16 +50,28 @@
             <p class="voice-studio-note" id="voice-studio-note">Choose a natural English voice on your device, then preview it. This is a browser voice, not a cloned narrator.</p>
           </div>
         </details>
+        <details class="test-ai-panel" id="test-ai-panel">
+          <summary><span>✦ Test AI connection</span><span id="ai-connection-status">Local example mode</span></summary>
+          <div class="test-ai-body">
+            <p>Experimental: connect to a gateway running <strong>on your Mac</strong>. Prompts are sent to an external AI service through that gateway. No Plus account cookies or API passwords are stored here.</p>
+            <label for="pairing-code">Local pairing code</label>
+            <input type="password" id="pairing-code" autocomplete="off" spellcheck="false" placeholder="Paste the one-time code from Terminal" maxlength="100">
+            <div class="test-ai-buttons"><button type="button" id="pair-ai">Connect local AI</button><button type="button" id="unpair-ai" disabled>Disconnect</button></div>
+            <label class="test-ai-memory"><input type="checkbox" id="share-memory"> Include up to 3 recent saved notes as context</label>
+            <p class="test-ai-disclosure">Off by default. If enabled, selected note text is sent to the gateway in plaintext for each request. Never test with sensitive memories. Conversation prompts also leave the device while connected.</p>
+            <p id="ai-test-message" role="status" aria-live="polite">Run the separate local bridge before connecting.</p>
+          </div>
+        </details>
       </section>
       <section class="conversation" aria-label="Conversation with Guardian">
         <div class="conversation-top"><div><span class="chat-avatar">✳</span><span><strong>Guardian</strong><small>Private conversation preview</small></span></div><span id="encryption-indicator" class="encryption-indicator">🔒 Locked</span></div>
-        <div class="messages" id="messages" role="log" aria-live="polite"><div class="day-label">YOUR SPACE</div><div class="msg assistant"><div class="msg-avatar">✳</div><div class="bubble">Hey there. I'm Guardian. ✨<br>When you're ready, we can try talking, make a plan, or explore the memories you've chosen to keep.<small>Local preview · not an AI model yet</small></div></div></div>
+        <div class="messages" id="messages" role="log" aria-live="polite"><div class="day-label">YOUR SPACE</div><div class="msg assistant"><div class="msg-avatar">✳</div><div class="bubble">Hey there. I'm Guardian. ✨<br>When you're ready, we can try talking, make a plan, or explore the memories you've chosen to keep.<small>Local preview · connect test AI in Settings</small></div></div></div>
         <div class="try-box" id="try-box"><span>TRY ASKING</span><button type="button" class="prompt" data-text="What do you remember about me?">What do you remember?</button><button type="button" class="prompt" data-text="Help me plan my day">Plan my day</button><button type="button" class="prompt" data-text="Let's study something">Let's study</button></div>
         <form class="composer" id="chat-form"><label class="sr-only" for="chat-input">Message Guardian</label><textarea id="chat-input" placeholder="Unlock your vault to start a conversation…" rows="1" maxlength="1500" disabled></textarea><button type="submit" id="send" disabled aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m4 12 16-8-5.2 16-3.3-6.5L4 12Zm7.5 1.5L20 4" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/></svg></button></form>
         <div class="chat-foot"><span id="chat-storage-state">🔒 Encrypted by Guardian Vault</span><button type="button" id="clear-view">Clear view</button></div>
       </section>
     </div>
-    <div class="below"><div><b>Privacy matters.</b> Guardian saves every completed text exchange as an encrypted Markdown record when the vault is unlocked. Browser dictation may send audio to your browser provider. Only activate the microphone if you're comfortable with that. Speech playback uses voices made available by your device or browser.</div><div class="preview-flag">✳ AI responses & Tortoise voice: coming later</div></div>
+    <div class="below"><div><b>Privacy matters.</b> Guardian saves completed exchanges as encrypted Markdown locally. When test AI is connected, prompt text and optional selected context pass through your locally running gateway to its provider. Browser dictation may send audio to your browser provider. Only activate the microphone if you're comfortable with that. Speech playback uses voices made available by your device or browser.</div><div class="preview-flag">✳ Optional local gateway test · voice is browser-based</div></div>
   </main>
   <div class="overlay" id="unlock-overlay" role="dialog" aria-modal="true" aria-labelledby="unlock-title"><form class="unlock-card" id="unlock-form"><span class="unlock-icon">✳</span><span class="eyebrow">YOUR PRIVATE SPACE</span><h2 id="unlock-title">Unlock your world.</h2><p id="unlock-desc">Use the passphrase from Guardian Private Vault. Your encryption key stays in this browser tab.</p><label for="unlock-pass">Vault passphrase</label><input id="unlock-pass" type="password" minlength="12" maxlength="256" required autocomplete="current-password" placeholder="Your private passphrase"><p class="unlock-error" id="unlock-error" role="alert"></p><button class="unlock-submit" id="unlock-submit" type="submit">Unlock and talk <span>↗</span></button><a href="../">Return to Private Vault</a></form></div>
   <div class="microphone-modal" id="mic-dialog" hidden role="dialog" aria-modal="true" aria-labelledby="mic-modal-title"><div class="mic-modal-card"><span class="modal-symbol">🎙</span><h2 id="mic-modal-title">Before we listen</h2><p>Your browser's speech recognition may send your microphone audio to its speech service. Guardian does not save audio, and no audio is uploaded by our website code. Use typing for a fully local conversation.</p><div><button id="mic-cancel" class="secondary" type="button">Keep typing</button><button id="mic-accept" class="accept" type="button">I understand, use microphone</button></div></div></div>
