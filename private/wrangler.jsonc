@@ -1,0 +1,8 @@
+{
+  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
+  "name": "guardian-private-vault",
+  "compatibility_date": "2026-10-18",
+  "assets": {
+    "directory": "./"
+  }
+}
