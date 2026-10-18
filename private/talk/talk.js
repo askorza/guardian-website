@@ -9,12 +9,13 @@
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let vault=null, memory=[], active=false, busy=false, recog=null, listening=false, speaking=false,
       speakReplies=false, consent=false, lastAnswer='', started=Date.now(), warnedSpeech=false;
-  let timer=null, toastTimer=null;
+  let timer=null, toastTimer=null, micError='';
+  function micPolicyAllows(){const policy=document.permissionsPolicy || document.featurePolicy;return !policy || typeof policy.allowsFeature!=='function' || policy.allowsFeature('microphone');}
 
   function notice(message){const el=$('toast');el.textContent=message;el.classList.add('visible');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('visible'),3900);}
   function status(text){$('voice-status').textContent=text;}
-  function composeEnabled(enabled){$('chat-input').disabled=!enabled;$('send').disabled=!enabled;$('mic').disabled=!enabled||!Recognition;$('hear-again').disabled=!enabled||!('speechSynthesis' in window)||!lastAnswer;
-    $('mic-helper').textContent=!enabled?'Unlock the vault to start talking.':!Recognition?'Voice input is unavailable here; typing works everywhere.':'Tap the microphone to talk · Or type below';
+  function composeEnabled(enabled){$('chat-input').disabled=!enabled;$('chat-input').placeholder=enabled?"What's on your mind?":"Unlock your vault to start a conversation…";$('send').disabled=!enabled;const micReady=!!Recognition&&micPolicyAllows();$('mic').disabled=!enabled||!micReady;$('hear-again').disabled=!enabled||!('speechSynthesis' in window)||!lastAnswer;
+    $('mic-helper').textContent=!enabled?'Unlock the vault to start talking.':!Recognition?'This browser does not support speech recognition; typing works everywhere.':!micReady?'Microphone is disabled by site permissions policy. Please reload after deployment.':'Tap the microphone to talk · Or type below';
     $('encryption-indicator').textContent=enabled?'🔒 Encrypted locally':'🔒 Locked';}
   function bubble(who,text,note){const row=document.createElement('div');row.className='msg '+who;const b=document.createElement('div');b.className='bubble';b.textContent=text;
     if(who==='assistant'){const avatar=document.createElement('div');avatar.className='msg-avatar';avatar.textContent='✳';row.append(avatar);}
@@ -53,12 +54,26 @@
     const answer=respond(question);lastAnswer=answer;try{await savePair(question,answer);bubble('assistant',answer,'Encrypted Markdown · local response');status('Saved securely ✦');if(speakReplies)speak(answer);}catch(error){bubble('assistant',answer,'Preview reply · NOT SAVED');notice('Could not encrypt this exchange — check device storage.');status('Not saved');console.warn(error.name);}
     busy=false;$('send').disabled=false;$('hear-again').disabled=!('speechSynthesis' in window)||!lastAnswer;
   }
-  function startSpeech(){if(!active||!Recognition||listening)return;stopVoice();try{recog=new Recognition();recog.lang=navigator.language||'en-US';recog.continuous=false;recog.interimResults=true;recog.maxAlternatives=1;
-      recog.onstart=()=>{listening=true;document.querySelector('.companion').classList.add('is-listening');status('I’m listening…');$('mic-helper').textContent='Say something · Tap the microphone again to stop';};
+  function startSpeech(){
+    if(!active||!Recognition||listening)return;
+    if(!micPolicyAllows()){status('Microphone restricted');$('mic-helper').textContent='The site’s microphone policy blocks recognition. Refresh after the Cloudflare update.';return;}
+    micError='';stopVoice();try{recog=new Recognition();recog.lang=navigator.language||'en-US';recog.continuous=false;recog.interimResults=true;recog.maxAlternatives=1;
+      recog.onstart=()=>{micError='';listening=true;document.querySelector('.companion').classList.add('is-listening');status('I’m listening…');$('mic-helper').textContent='Say something · Tap the microphone again to stop';};
       recog.onresult=e=>{let heard='';let final=false;for(let i=e.resultIndex;i<e.results.length;i++){heard+=e.results[i][0].transcript;final=final||e.results[i].isFinal;}
         $('chat-input').value=heard;if(final){recog.stop();send(heard);}};
-      recog.onerror=e=>{notice(e.error==='not-allowed'?'Microphone blocked. Allow access in your browser settings.':'Microphone recognition failed: '+e.error);};
-      recog.onend=()=>{listening=false;document.querySelector('.companion').classList.remove('is-listening');if(active){status('Here with you ✦');$('mic-helper').textContent='Tap the microphone to talk · Or type below';}};
+      recog.onerror=e=>{
+        const reasons={
+          'not-allowed':'Voice input was denied. Check both the browser site permission and your device microphone privacy settings.',
+          'service-not-allowed':'The browser speech-recognition service is unavailable or restricted. Try Chrome or use typing.',
+          'audio-capture':'The browser cannot access a working microphone. Check your audio input device.',
+          'network':'The browser speech service could not connect. Your message can still be typed.',
+          'no-speech':'I didn’t hear anything. Tap the microphone and try again.',
+          'aborted':'Voice input stopped.'
+        };
+        micError=reasons[e.error]||('Speech recognition issue: '+(e.error||'unknown'));
+        if(e.error!=='aborted'){notice(micError);status('Voice input unavailable');$('mic-helper').textContent=micError;}
+      };
+      recog.onend=()=>{listening=false;document.querySelector('.companion').classList.remove('is-listening');if(active && !micError){status('Here with you ✦');$('mic-helper').textContent='Tap the microphone to talk · Or type below';}};
       recog.start();
     }catch{notice('Unable to start browser speech recognition.');}}
   async function init(){
@@ -76,7 +91,32 @@
     $('mic').addEventListener('click',()=>{if(!Recognition||!active)return;if(listening){recog?.stop();return;}if(!consent){$('mic-dialog').hidden=false;return;}startSpeech();});
     $('mic-cancel').addEventListener('click',()=>{$('mic-dialog').hidden=true;});
     $('mic-accept').addEventListener('click',()=>{consent=true;$('mic-dialog').hidden=true;startSpeech();});
-    const mascot=$('mascot');let mx=0,my=0;document.addEventListener('pointermove',e=>{const r=mascot.getBoundingClientRect();const dx=(e.clientX-r.left-r.width/2)/(innerWidth||1);const dy=(e.clientY-r.top-r.height/2)/(innerHeight||1);const x=Math.max(-4,Math.min(4,dx*9)),y=Math.max(-3,Math.min(3,dy*8));document.querySelectorAll('.pupil').forEach(p=>{p.style.transform=`translate(${x-5}px,${y-9}px)`;});},{passive:true});
+    // Exactly the same pupil positions and blink behavior as Guardian’s landing-page face.
+    const face=$('talk-guardian-face');let gazeX=0,gazeY=0;
+    document.addEventListener('pointermove',e=>{
+      const r=face.getBoundingClientRect();
+      const dx=(e.clientX-r.left-r.width/2)/(innerWidth||1);
+      const dy=(e.clientY-r.top-r.height/2)/(innerHeight||1);
+      gazeX=Math.max(-3.8,Math.min(3.8,dx*12));
+      gazeY=Math.max(-2.8,Math.min(2.8,dy*10));
+      face.querySelectorAll('.pupil').forEach(p=>{
+        p.style.setProperty('--eye-x',gazeX.toFixed(2)+'px');
+        p.style.setProperty('--eye-y',gazeY.toFixed(2)+'px');
+      });
+      face.style.setProperty('--face-tilt',(gazeX*.65).toFixed(2)+'deg');
+    },{passive:true});
+    function blink(){
+      if(!document.hidden){
+        face.classList.add('blinking');
+        setTimeout(()=>face.classList.remove('blinking'),270);
+      }
+      setTimeout(blink,2700+Math.random()*3500);
+    }
+    setTimeout(blink,1700);
+    window.addEventListener('blur',()=>{
+      face.style.setProperty('--face-tilt','0deg');
+      face.querySelectorAll('.pupil').forEach(p=>{p.style.setProperty('--eye-x','0px');p.style.setProperty('--eye-y','0px');});
+    });
     const refreshActivity=()=>{started=Date.now();};document.addEventListener('pointerdown',refreshActivity,{passive:true});document.addEventListener('keydown',refreshActivity,{passive:true});
     timer=setInterval(()=>{if(active&&Date.now()-started>10*60_000)lock();},16000);
     document.addEventListener('visibilitychange',()=>{if(document.hidden){stopVoice();}});
