@@ -7,96 +7,73 @@
   const globeArea = byId('globe-interaction');
   const canvas = byId('globe-canvas');
   const head = byId('guardian-head');
-  const options = [
-    { icon: '⌁', name: 'Research a topic', caption: 'Source, compare, simplify' },
-    { icon: '◷', name: 'Organize your time', caption: 'Turn scattered plans into a calmer day' },
-    { icon: '✓', name: 'Homework help', caption: 'Understand it properly, keep your own voice' },
-    { icon: '✦', name: 'Plan your week', caption: 'A clearer path to what matters' },
-    { icon: '◈', name: 'Explore ideas', caption: 'Fresh angles on big questions' },
-    { icon: '◎', name: 'Remember details', caption: 'Context you choose to keep' },
-    { icon: '✉', name: 'Draft a reply', caption: 'Find just the right words' },
-    { icon: '✳', name: 'Create together', caption: 'From first spark to final draft' },
-    { icon: '◇', name: 'Explore the world', caption: 'Think through your next trip' }
-  ];
-  let active = 1;
-  const wrapIndex = (n) => (n + options.length) % options.length;
-
-  function showOptions(animate = true) {
-    [-1, 0, 1].forEach((offset, n) => {
-      const prefix = `card-${'abc'[n]}`;
-      const option = options[wrapIndex(active + offset)];
-      const card = byId(`orbit-card-${'abc'[n]}`);
-      if (!card) return;
-      if (animate && !prefersReducedMotion) {
-        card.classList.remove('card-arrived');
-        void card.offsetWidth;
-        card.classList.add('card-arrived');
-      }
-      byId(`${prefix}-icon`).textContent = option.icon;
-      byId(`${prefix}-title`).textContent = option.name;
-      byId(`${prefix}-caption`).textContent = option.caption;
-      card.dataset.offset = String(offset);
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('aria-label', `Explore ${option.name}`);
-    });
-    globeArea.setAttribute('aria-label', `Interactive rotating Guardian globe. Currently exploring ${options[active].name}. Drag or use arrow keys to explore more.`);
-  }
-
-  // Each of the three cards is a physical object on a rotating orbital plane.
-  // We preserve its displayed content during flight so a click feels like
-  // movement, not merely a text change in a fixed position.
-  const orbitSlots = [byId('orbit-card-a'), byId('orbit-card-b'), byId('orbit-card-c')].filter(Boolean);
-  const ORBIT_STEP = Math.PI * 2 / 3;
-  const ORBIT_BASE = [-2.43, -0.335, 1.765];
-  let orbitPending = false;
+  // Four persistent satellites. Their labels never switch places; the cards physically orbit.
+  const orbitCards = [
+    byId('orbit-card-a'), byId('orbit-card-b'), byId('orbit-card-c'), byId('orbit-card-d'), byId('orbit-card-e'), byId('orbit-card-f')
+  ].filter(Boolean);
+  const ORBIT_STEP = Math.PI / 3;
   let orbitVelocity = 0;
-  let updatePulse = 0;
+  let motionDebug = { positions: [], hidden: [] };
+
+  function orbitGeometry() {
+    const w = globeArea?.clientWidth || 600;
+    const h = globeArea?.clientHeight || 620;
+    const mobile = w < 540;
+    const cardWidth = mobile ? 116 : 188;
+    const rx = Math.max(1, w / 2 - cardWidth / 2 - (mobile ? 3 : 12));
+    const ry = Math.min(h * (mobile ? .325 : .318), mobile ? 135 : 194);
+    const cx = w * .50;
+    const cy = h * (mobile ? .46 : .47);
+    // A superellipse stays outside the central character instead of crossing its eyes.
+    return { w, h, mobile, rx, ry, cx, cy };
+  }
 
   function positionOrbitCards() {
-    if (!globeArea || !orbitSlots.length) return;
-    const width = globeArea.clientWidth;
-    const height = globeArea.clientHeight;
-    const mobile = width < 540;
-    const cx = width * .50;
-    const cy = height * (mobile ? .455 : .465);
-    const rx = Math.min(width * (mobile ? .345 : .40), mobile ? 155 : 244);
-    const ry = Math.min(height * (mobile ? .285 : .30), mobile ? 108 : 172);
-    const halfTurn = globe.orbitAngle;
-    orbitSlots.forEach((card, index) => {
-      const theta = ORBIT_BASE[index] + halfTurn;
-      const ex = Math.cos(theta);
-      const ey = Math.sin(theta);
-      const depth = (ey + 1) / 2;
-      const x = cx + rx * ex;
-      const y = cy + ry * ey;
-      const size = mobile ? .89 + depth * .12 : .84 + depth * .18;
-      // A tiny parallax shift and gentle foreshortening sell the 3D path.
-      card.style.setProperty('--card-x', `${x.toFixed(1)}px`);
-      card.style.setProperty('--card-y', `${y.toFixed(1)}px`);
+    if (!globeArea || !orbitCards.length) return;
+    const { w, h, mobile, rx, ry, cx, cy } = orbitGeometry();
+    globeArea.style.setProperty('--ring-width', `${rx * 2}px`);
+    globeArea.style.setProperty('--ring-height', `${ry * 2}px`);
+    const faceRect = head?.getBoundingClientRect();
+    const areaRect = globeArea.getBoundingClientRect();
+    // Guard the whole character: no floating card can obscure the eyes or blush.
+    const guard = faceRect ? {
+      left:faceRect.left - areaRect.left - 13,
+      right:faceRect.right - areaRect.left + 13,
+      top:faceRect.top - areaRect.top - 13,
+      bottom:faceRect.bottom - areaRect.top + 13
+    } : null;
+    const debug = [];
+    orbitCards.forEach((card, i) => {
+      const theta = globe.orbitAngle + i * ORBIT_STEP - 2.40;
+      const cos = Math.cos(theta), sin = Math.sin(theta);
+      const exponent = .77;
+      const x = cx + rx * Math.sign(cos) * Math.pow(Math.abs(cos), exponent);
+      const y = cy + ry * Math.sign(sin) * Math.pow(Math.abs(sin), exponent);
+      const depth = (sin + 1) / 2;
+      const size = mobile ? .91 + depth * .035 : .90 + depth * .08;
+      const cw = card.offsetWidth * size;
+      const ch = card.offsetHeight * size;
+      // For mobile, a satellite briefly disappears behind the globe if there is not enough room.
+      const collision = !!guard && (x + cw/2 > guard.left && x - cw/2 < guard.right &&
+                                   y + ch/2 > guard.top && y - ch/2 < guard.bottom);
+      const opacity = collision ? 0 : depth < .15 ? .26 : .72 + depth * .28;
+      card.style.setProperty('left', `${x.toFixed(2)}px`, 'important');
+      card.style.setProperty('top', `${y.toFixed(2)}px`, 'important');
       card.style.setProperty('--card-scale', size.toFixed(3));
-      card.style.setProperty('--card-rotate', `${(ex * 5).toFixed(2)}deg`);
-      card.style.setProperty('--card-opacity', `${(.80 + depth * .20).toFixed(3)}`);
-      card.style.setProperty('--card-blur', `${((1-depth) * .55).toFixed(2)}px`);
-      card.style.setProperty('--card-shadow-y', `${(16 + depth * 17).toFixed(1)}px`);
-      card.style.zIndex = String(7 + Math.round(depth * 7));
-      card.classList.toggle('is-front', depth > .57);
-      card.classList.toggle('is-back', depth <= .57);
+      card.style.setProperty('--card-opacity', opacity.toFixed(3));
+      card.style.setProperty('--card-rotate', `${(cos * 4.0).toFixed(2)}deg`);
+      card.style.setProperty('--card-blur', depth < .2 ? '0.5px' : '0px');
+      card.style.zIndex = String(depth > .5 ? 14 : 4);
+      card.style.pointerEvents = collision || depth < .15 ? 'none' : 'auto';
+      card.classList.toggle('is-hidden-by-globe', collision);
+      card.setAttribute('tabindex', collision || depth < .15 ? '-1' : '0');
+      debug.push({id:card.id, x, y, opacity, collision, theta});
     });
+    motionDebug = {positions:debug, hidden:debug.filter(d=>d.collision).map(d=>d.id)};
   }
 
-  function finishOrbitUpdate() {
-    if (!orbitPending || isDragging) return;
-    if (Math.abs(globe.aimOrbit - globe.orbitAngle) > .064 || Math.abs(orbitVelocity) > .32) return;
-    orbitPending = false;
-    // An extremely short crossfade makes the new capability captions feel
-    // like the next orbit group arriving instead of snapping into place.
-    orbitSlots.forEach(card => card.classList.add('orbit-refresh'));
-    window.setTimeout(() => {
-      showOptions(false);
-      orbitSlots.forEach(card => card.classList.remove('orbit-refresh'));
-    }, prefersReducedMotion ? 0 : 135);
-  }
+  // Read-only test hook: useful for checking actual animation geometry and collisions.
+  window.__guardianOrbitDebug = () => ({...motionDebug, angle:globe.orbitAngle, target:globe.aimOrbit});
 
   const globe = {
     longitude: -0.38,
@@ -226,30 +203,28 @@
 
   function rotateFeature(direction) {
     if (!direction) return;
-    const wholeSteps = Math.sign(direction) * Math.max(1, Math.round(Math.abs(direction)));
-    active = wrapIndex(active + wholeSteps);
-    globe.aimLongitude += wholeSteps * Math.PI / 5.5;
-    globe.aimOrbit += wholeSteps * ORBIT_STEP;
+    globe.aimOrbit += Math.sign(direction) * ORBIT_STEP;
+    globe.aimLongitude += Math.sign(direction) * .41;
     globe.interaction = performance.now();
-    orbitPending = true;
-    // Leave labels untouched while each physical card travels through the arc.
-    globeArea?.setAttribute('aria-label', `Guardian orbit moving to ${options[active].name}.`);
   }
 
   byId('globe-next')?.addEventListener('click', () => rotateFeature(1));
   byId('globe-prev')?.addEventListener('click', () => rotateFeature(-1));
-  document.querySelectorAll('.orbit-card').forEach((card) => {
-    const activateCard = () => {
-      const offset = Number(card.dataset.offset || 0);
-      if (!Number.isFinite(offset) || offset === 0) return;
-      rotateFeature(offset);
+  orbitCards.forEach((card, index) => {
+    const activate = () => {
+      // Rotate the chosen satellite to the user's side, without replacing its content.
+      const current = globe.aimOrbit + index * ORBIT_STEP - 2.40;
+      const target = Math.PI / 2;
+      let delta = (target - current + Math.PI) % (Math.PI * 2);
+      if (delta < 0) delta += Math.PI * 2;
+      delta -= Math.PI;
+      globe.aimOrbit += delta;
+      globe.aimLongitude += delta * .26;
+      globe.interaction = performance.now();
     };
-    card.addEventListener('click', activateCard);
+    card.addEventListener('click', activate);
     card.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        activateCard();
-      }
+      if (e.key === 'Enter' || e.key === ' ') {e.preventDefault();e.stopPropagation();activate();}
     });
   });
 
@@ -262,7 +237,7 @@
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     isDragging = true;
     pointerStart = { x: e.clientX, y: e.clientY, initialLongitude: globe.aimLongitude, initialLatitude: globe.aimLatitude,
-      initialOrbit: globe.aimOrbit, initialActive: active };
+      initialOrbit: globe.aimOrbit };
     pointerDownPosition = { x: e.clientX, y: e.clientY, onHead: !!head && (() => { const r = head.getBoundingClientRect(); return e.clientX >= r.left - 12 && e.clientX <= r.right + 12 && e.clientY >= r.top - 12 && e.clientY <= r.bottom + 12; })() };
     globe.interaction = performance.now();
     globeArea.classList.add('dragging');
@@ -274,22 +249,12 @@
     const dy = e.clientY - pointerStart.y;
     globe.aimLongitude = pointerStart.initialLongitude + dx * .007;
     globe.aimLatitude = Math.max(-.7, Math.min(.7, pointerStart.initialLatitude - dy * .004));
-    globe.aimOrbit = pointerStart.initialOrbit + dx * .0125;
+    globe.aimOrbit = pointerStart.initialOrbit + dx * .009;
     globe.interaction = performance.now();
-    const steps = Math.round((globe.aimOrbit - pointerStart.initialOrbit) / ORBIT_STEP);
-    active = wrapIndex(pointerStart.initialActive + steps);
-    orbitPending = true;
+
   });
   const endDrag = () => {
     if (!isDragging) return;
-    if (pointerStart) {
-      const steps = Math.round((globe.aimOrbit - pointerStart.initialOrbit) / ORBIT_STEP);
-      const snapped = pointerStart.initialOrbit + steps * ORBIT_STEP;
-      globe.aimOrbit = snapped;
-      globe.aimLongitude = pointerStart.initialLongitude + (snapped - pointerStart.initialOrbit) * .27;
-      active = wrapIndex(pointerStart.initialActive + steps);
-      orbitPending = orbitPending || !!steps;
-    }
     isDragging = false;
     pointerStart = null;
     pointerDownPosition = null;
@@ -448,7 +413,6 @@
     }
     animateFaces(now);
     positionOrbitCards();
-    finishOrbitUpdate();
     // Complex cartography is expensive. Paint the globe at ~24fps only while visible;
     // the eyes update independently at the browser's animation cadence.
     if ((!prefersReducedMotion || frame++ < 4) && globeInView && now - lastGlobePaint > 42) {
@@ -470,7 +434,6 @@
   }
   // Faces must not depend on WebGL/canvas availability.
   requestAnimationFrame(tick);
-  showOptions(false);
   positionOrbitCards();
   // Blink scheduling is centralized in animateFaces to avoid duplicate blinks.
 
