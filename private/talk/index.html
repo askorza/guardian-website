@@ -33,6 +33,23 @@
         <div class="voice-orbit-label one">a little less to carry</div><div class="voice-orbit-label two">a little more room</div>
         <div class="voice-controls"><button class="round-control" id="hear-again" title="Read Guardian's last message aloud" aria-label="Read response aloud" disabled>◖))</button><button class="mic-btn" id="mic" type="button" aria-label="Start speaking to Guardian" disabled><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 1 0 6 0V6a3 3 0 0 0-3-3Zm-7 9a7 7 0 0 0 14 0M12 19v3m-4 0h8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button><button class="round-control" id="mute" type="button" aria-label="Turn on spoken replies" aria-pressed="false">♪</button></div>
         <p class="mic-helper" id="mic-helper">Unlock the vault to start talking.</p>
+        <details class="voice-studio" id="voice-studio">
+          <summary><span>✦ Voice Studio</span><span class="voice-studio-sub">English · warm & calm <span aria-hidden="true">⌄</span></span></summary>
+          <div class="voice-studio-inner">
+            <div class="voice-studio-grid">
+              <p class="english-only-label">English only · warm, measured narration</p>
+              <label>Available voice<select id="voice-choice"><option value="">Find voices on this device…</option></select></label>
+            </div>
+            <div class="voice-studio-sliders">
+              <label for="voice-rate">Pace <output id="voice-rate-value" for="voice-rate">0.90×</output></label>
+              <input id="voice-rate" type="range" min="0.78" max="1.08" step="0.02" value="0.90">
+              <label for="voice-pitch">Pitch <output id="voice-pitch-value" for="voice-pitch">0.92</output></label>
+              <input id="voice-pitch" type="range" min="0.78" max="1.08" step="0.02" value="0.92">
+            </div>
+            <button type="button" class="voice-preview" id="voice-preview">▶ Preview this voice</button>
+            <p class="voice-studio-note" id="voice-studio-note">Choose a natural English voice on your device, then preview it. This is a browser voice, not a cloned narrator.</p>
+          </div>
+        </details>
       </section>
       <section class="conversation" aria-label="Conversation with Guardian">
         <div class="conversation-top"><div><span class="chat-avatar">✳</span><span><strong>Guardian</strong><small>Private conversation preview</small></span></div><span id="encryption-indicator" class="encryption-indicator">🔒 Locked</span></div>
