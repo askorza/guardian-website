@@ -2,3 +2,5 @@ README.md
 wrangler.jsonc
 .assetsignore
 *.md
+talk/test-bridge.py
+talk/TEST-OMNIGPT.md
