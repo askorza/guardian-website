@@ -15,3 +15,6 @@
 @media(max-width:900px){.access-panel{grid-template-columns:1fr}.access-tools{grid-column:1}}
 @media(max-width:600px){.access-panel{padding:24px}.unlocked-bar{align-items:stretch;flex-direction:column}.unlocked-bar>div{justify-content:space-between}.unlocked-bar .quiet,.unlocked-bar .outline{flex:1}.access-copy h2{font-size:30px}}
 .privacy-page{padding:80px 0;max-width:850px;line-height:1.8}.privacy-page h1{font-size:clamp(44px,6vw,70px);letter-spacing:-.06em;line-height:1.05}.privacy-page h2{margin-top:34px;letter-spacing:-.04em}.privacy-page p{color:#758193;font-size:15px}.privacy-page a{text-decoration:underline;color:#597eaf}
+
+/* Guardian talk preview navigation */
+.lab-header .back[href="talk/"]{white-space:nowrap;padding:9px 12px;background:#edf3f8;border-radius:18px;color:#597eab;margin-left:0}.unlocked-bar a.quiet[href="talk/"]{display:inline-flex;align-items:center;padding:10px 12px;font-size:12px;font-weight:800;color:#607fa9;border-radius:12px;white-space:nowrap;text-decoration:none;background:#edf4f9}@media(max-width:720px){.lab-header .nav{height:auto;min-height:70px;gap:10px;flex-wrap:wrap;padding:12px 0}.lab-header .lab-status{display:none}.lab-header .back{font-size:10px}.lab-header .back[href="privacy.html"]{display:none}.lab-header .logo{font-size:20px}.unlocked-bar a.quiet[href="talk/"]{flex:1;justify-content:center}}
