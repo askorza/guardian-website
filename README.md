@@ -38,3 +38,7 @@ This is static hosting. Animations, globe, storytelling and app-preview tabs wor
 ## About product claims
 
 All shown app screens, assistant replies, personal memory and tutoring behavior are **illustrative planned capabilities**, not an integrated AI model or promises of results. The page uses no fabricated testimonials, performance metrics, user counts or affiliations.
+## Encrypted Private Vault beta
+
+A separate-origin, client-side encrypted prototype is in [`private/`](private/README.md). It is intended for its own free Cloudflare Pages `*.pages.dev` site (build output directory: `private`), **not** for use on the shared `github.io` marketing origin. The vault uses browser-side AES-256-GCM encryption and requires a user passphrase; encrypted notes stay on-device. It is experimental and not independently security-audited. It has no AI model or cloud sync. See [`private/privacy.html`](private/privacy.html) and the [deployment instructions](private/README.md).
+
