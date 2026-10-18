@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f8f7f4">
+  <meta name="description" content="Explore Guardian's experimental local-only Markdown memory. No AI, upload or account required.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Memory Lab · Guardian</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg">
+  <link rel="stylesheet" href="lab.css">
+  <script src="lab.js" defer></script>
+</head>
+<body>
+<header class="lab-header"><div class="shell nav"><a class="logo" href="../"><span aria-hidden="true" class="robot-mark">● ●</span> Guardian</a><span class="lab-status">Local Memory Lab <i></i> Experimental</span><a class="back" href="../">← Back to the website</a></div></header>
+<main>
+  <section class="intro shell"><div class="intro-copy"><span class="eyebrow">BUILT FOR OWNERSHIP · PROTOTYPE</span><h1>Your memory.<br><em>Your rules.</em></h1><p>Try a small part of Guardian's local-first idea. Create memories as portable Markdown, reference a file without uploading it, and forget what you no longer need. Everything in this demo stays inside this browser.</p><div class="privacy-line"><span>◉ No account</span><span>◉ No AI calls</span><span>◉ No uploads</span></div></div><div class="memory-orb" aria-hidden="true"><div class="memory-orb-inner"><span class="mem-eye"></span><span class="mem-eye"></span><i class="mem-smile"></i></div><div class="orbit-ring one"></div><div class="orbit-ring two"></div></div></section>
+  <div class="shell lab-columns">
+    <section class="panel composer" aria-labelledby="create-title"><div class="panel-head"><p class="eyebrow">01 · KEEP</p><h2 id="create-title">Save something useful.</h2><p>Write a thought, plan, preference or a short note about an original file. Guardian writes a Markdown memory on this device.</p></div>
+      <form id="note-form"><label for="note-title">Title</label><input id="note-title" maxlength="90" required placeholder="e.g. My research plan" autocomplete="off"><label for="note-category">Category</label><select id="note-category"><option value="work">Work & projects</option><option value="study">Study & learning</option><option value="life">Daily life</option><option value="preferences">Preferences</option></select><label for="note-content">Memory</label><textarea id="note-content" rows="6" maxlength="12000" placeholder="An idea to return to, what matters, a decision you made…"></textarea>
+      <div class="attachment-area"><label class="attach-control" for="reference-file">＋ Reference an existing file <span>(optional)</span></label><input id="reference-file" type="file" accept="image/*,.pdf,.txt,.md,.doc,.docx" aria-describedby="file-note"><div class="source-note" id="source-note" role="status">No file selected.</div><p id="file-note">Guardian saves its name and fingerprint, not its contents. You may need to select it again later.</p></div>
+      <button class="primary" type="submit" id="save-memory">Save locally <span>↗</span></button></form>
+    </section>
+    <section class="panel vault" aria-labelledby="vault-title"><div class="panel-head"><p class="eyebrow">02 · REVIEW</p><h2 id="vault-title">The memories you choose.</h2><p>A small personal vault, not a giant invisible history. Browse or remove your saved notes whenever you want.</p></div><div class="vault-toolbar"><label for="filter-category" class="sr-only">Filter by category</label><select id="filter-category"><option value="all">All categories</option><option value="work">Work & projects</option><option value="study">Study & learning</option><option value="life">Daily life</option><option value="preferences">Preferences</option></select><span class="vault-count" id="memory-count">0 memories</span></div><div id="memory-list" class="memory-list" aria-live="polite"><div class="empty-state">No saved memories yet. Add your first thought to begin.</div></div><div class="vault-bottom"><span id="storage-label">Checking local storage…</span><button id="export-all" class="quiet" type="button">Export all as .md ↗</button></div></section>
+  </div>
+  <section class="shell forget-panel" aria-labelledby="forget-title"><div><p class="eyebrow">03 · FORGET</p><h2 id="forget-title">Let go of what you don't need.</h2><p>Remove a single memory, everything in a category, or your entire local vault. This prototype has no server copy, but browser backups and previously exported files remain under your control.</p></div><div class="forget-actions"><button class="outline" id="forget-category" type="button">Forget filtered category</button><button class="danger" id="clear-all" type="button">Forget everything</button></div></section>
+  <div class="shell note-band"><span>Important</span><p>Prototype only. Local browser storage can be cleared or lost. Export Markdown backups regularly. This demo has no AI processing or synchronization; a future product will need encryption, recovery and clearer file permissions.</p></div>
+</main>
+<footer class="shell footer"><span>Guardian · Local Memory Lab · Experimental</span><a href="../">Return to Guardian ↗</a></footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
