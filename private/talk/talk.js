@@ -22,13 +22,74 @@
     if(note){const n=document.createElement('small');n.textContent=note;b.append(n);}row.append(b);$('messages').append(row);$('messages').scrollTop=$('messages').scrollHeight;}
   function stopVoice(){if(recog&&listening){try{recog.abort();}catch{}}listening=false;$('companion');document.querySelector('.companion').classList.remove('is-listening','is-talking');if('speechSynthesis' in window){window.speechSynthesis.cancel();}speaking=false;}
   function lock(){stopVoice();if(vault)vault.lock();memory=[];active=false;busy=false;$('chat-input').value='';$('unlock-pass').value='';$('unlock-error').textContent='';$('unlock-overlay').hidden=false;composeEnabled(false);status('Here with you ✦');notice('Your conversation is locked.');}
-  function chooseVoice(lang){const all=speechSynthesis.getVoices();return all.find(v=>v.lang?.toLowerCase()===lang?.toLowerCase()&&v.localService)||all.find(v=>v.lang?.split('-')[0]===lang?.split('-')[0]&&v.localService)||all.find(v=>v.lang?.toLowerCase()===lang?.toLowerCase())||all[0]||null;}
-  function speak(text){if(!active||!('speechSynthesis' in window)){notice('No voice playback available in this browser.');return;}
-    stopVoice();const utter=new SpeechSynthesisUtterance(text.slice(0,650));utter.lang=(navigator.language||'en-US').startsWith('pl')?'pl-PL':'en-US';utter.rate=.94;utter.pitch=1.07;
-    const voice=chooseVoice(utter.lang);if(voice)utter.voice=voice;
-    utter.onstart=()=>{speaking=true;document.querySelector('.companion').classList.add('is-talking');status('Speaking to you ✦');};
-    const done=()=>{speaking=false;document.querySelector('.companion').classList.remove('is-talking');status('Here with you ✦');};utter.onend=done;utter.onerror=done;
-    speechSynthesis.speak(utter);
+  const VOICE_STORE='guardian-talk-voice-v1';
+  let voiceOptions={lang:'en-GB',voiceURI:'',rate:.90,pitch:.94};
+  try{
+    const saved=JSON.parse(localStorage.getItem(VOICE_STORE)||'null');
+    if(saved&&typeof saved==='object'){
+      // Voice and recognition stay English-only, even if a previous build saved Polish.
+      if(typeof saved.voiceURI==='string')voiceOptions.voiceURI=saved.voiceURI;
+      if(Number.isFinite(saved.rate))voiceOptions.rate=Math.min(1.08,Math.max(.78,saved.rate));
+      if(Number.isFinite(saved.pitch))voiceOptions.pitch=Math.min(1.08,Math.max(.78,saved.pitch));
+    }
+  }catch{}
+  function saveVoiceOptions(){try{localStorage.setItem(VOICE_STORE,JSON.stringify(voiceOptions));}catch{}}
+  function availableVoices(){try{return 'speechSynthesis' in window?speechSynthesis.getVoices():[];}catch{return [];}}
+  function voiceScore(v){
+    const name=(v.name||'').toLowerCase();
+    let value=Number(!!v.localService)*3;
+    if(/natural|neural|premium|enhanced|high quality/.test(name))value+=5;
+    if(/daniel|oliver|arthur|alex|thomas|zosia|paulina|ewa|anna/.test(name))value+=2;
+    if(/compact|novelty|fun|whisper|robot|zarvox|trinoids/.test(name))value-=7;
+    if(v.lang?.toLowerCase()==='en-gb')value+=4;
+    if(/daniel|oliver|arthur|george|jamie|ryan|alfie/.test(name))value+=3;
+    if(/male|english united kingdom|british/.test(name))value+=1;
+    return value;
+  }
+  function chooseVoice(){
+    const voices=availableVoices();
+    if(voiceOptions.voiceURI){const saved=voices.find(v=>v.voiceURI===voiceOptions.voiceURI && /^en(?:-|$)/i.test(v.lang||''));if(saved)return saved;}
+    const family=voiceOptions.lang.slice(0,2).toLowerCase();
+    const matching=voices.filter(v=>/^en(?:-|$)/i.test(v.lang||''));
+    matching.sort((a,b)=>voiceScore(b)-voiceScore(a));
+    return matching[0]||null;
+  }
+  function populateVoices(){
+    const select=$('voice-choice');if(!select)return;
+    const list=availableVoices().filter(v=>/^en(?:-|$)/i.test(v.lang||'')).sort((a,b)=>voiceScore(b)-voiceScore(a));
+    const previous=voiceOptions.voiceURI;
+    select.replaceChildren();
+    const automatic=document.createElement('option');automatic.value='';automatic.textContent='Automatic · best available';select.append(automatic);
+    for(const v of list){const item=document.createElement('option');item.value=v.voiceURI;item.textContent=v.name+' · '+v.lang+(v.localService?' · on device':' · browser service');select.append(item);}
+    if(previous&&list.some(v=>v.voiceURI===previous)){select.value=previous;}
+    else{select.value='';if(previous){voiceOptions.voiceURI='';saveVoiceOptions();}}
+    $('voice-studio-note').textContent=list.length?
+      `${list.length} English voice${list.length===1?'':'s'} available. For a warm, natural delivery, preview British voices such as Daniel if installed. Browser-service voices may process text remotely.`:
+      'No matching voices found. Install a high-quality system voice or try another browser. Default playback may be unavailable.';
+  }
+  function renderVoiceOptions(){
+    $('voice-rate').value=String(voiceOptions.rate);
+    $('voice-pitch').value=String(voiceOptions.pitch);
+    $('voice-rate-value').textContent=voiceOptions.rate.toFixed(2)+'×';
+    $('voice-pitch-value').textContent=voiceOptions.pitch.toFixed(2);
+    $('voice-preview').disabled=!('speechSynthesis' in window);
+    populateVoices();
+  }
+  function speak(text,{preview=false}={}){
+    if(!active||!('speechSynthesis' in window)){notice('No voice playback available in this browser.');return;}
+    stopVoice();
+    // Strip display-only decoration, letting the system voice handle natural punctuation.
+    const audible=text.replace(/[☁️✨🤍✦✳]/gu,'').replace(/\*\*/g,'').replace(/[•]/g,'').trim().slice(0,650);
+    const utter=new SpeechSynthesisUtterance(audible);
+    const voice=chooseVoice();
+    utter.lang=voice?.lang||voiceOptions.lang;
+    utter.rate=voiceOptions.rate;
+    utter.pitch=voiceOptions.pitch;
+    if(voice)utter.voice=voice;
+    utter.onstart=()=>{speaking=true;document.querySelector('.companion').classList.add('is-talking');status(preview?'Voice preview ✦':'Speaking to you ✦');};
+    const done=()=>{speaking=false;document.querySelector('.companion').classList.remove('is-talking');status('Here with you ✦');};
+    utter.onend=done;utter.onerror=()=>{done();notice('This browser voice could not play. Try a different voice in Voice Studio.');};
+    try{speechSynthesis.speak(utter);}catch{done();notice('Unable to play this browser voice.');}
   }
   function includes(text,...pieces){return pieces.some(p=>text.includes(p));}
   function respond(question){const q=question.toLowerCase().normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
@@ -57,7 +118,7 @@
   function startSpeech(){
     if(!active||!Recognition||listening)return;
     if(!micPolicyAllows()){status('Microphone restricted');$('mic-helper').textContent='The site’s microphone policy blocks recognition. Refresh after the Cloudflare update.';return;}
-    micError='';stopVoice();try{recog=new Recognition();recog.lang=navigator.language||'en-US';recog.continuous=false;recog.interimResults=true;recog.maxAlternatives=1;
+    micError='';stopVoice();try{recog=new Recognition();recog.lang=voiceOptions.lang;recog.continuous=false;recog.interimResults=true;recog.maxAlternatives=1;
       recog.onstart=()=>{micError='';listening=true;document.querySelector('.companion').classList.add('is-listening');status('I’m listening…');$('mic-helper').textContent='Say something · Tap the microphone again to stop';};
       recog.onresult=e=>{let heard='';let final=false;for(let i=e.resultIndex;i<e.results.length;i++){heard+=e.results[i][0].transcript;final=final||e.results[i].isFinal;}
         $('chat-input').value=heard;if(final){recog.stop();send(heard);}};
@@ -81,6 +142,18 @@
     if((location.protocol!=='https:'&&!['localhost','127.0.0.1'].includes(location.hostname))||location.hostname.endsWith('.github.io')){$('unlock-error').textContent='This preview requires a dedicated HTTPS origin.';return;}
     try{vault=await Vault.load();const created=await vault.isCreated();if(!created){$('unlock-title').textContent='Your vault comes first.';$('unlock-desc').textContent='Create an encrypted vault first. Then return here with your passphrase.';$('unlock-pass').disabled=true;$('unlock-submit').disabled=true;}}catch(e){$('unlock-error').textContent='Secure storage is unavailable in this browser.';return;}
     composeEnabled(false);
+    renderVoiceOptions();
+    if('speechSynthesis' in window){
+      if(typeof speechSynthesis.addEventListener==='function')speechSynthesis.addEventListener('voiceschanged',populateVoices);
+      else speechSynthesis.onvoiceschanged=populateVoices;
+      // Some browsers populate voices asynchronously after the page first loads.
+      setTimeout(populateVoices,700);
+    }
+    $('voice-choice').addEventListener('change',e=>{voiceOptions.voiceURI=e.target.value;saveVoiceOptions();});
+    for(const kind of ['rate','pitch'])$('voice-'+kind).addEventListener('input',e=>{voiceOptions[kind]=Number(e.target.value);saveVoiceOptions();$('voice-'+kind+'-value').textContent=kind==='rate'?voiceOptions.rate.toFixed(2)+'×':voiceOptions.pitch.toFixed(2);});
+    $('voice-preview').addEventListener('click',()=>{
+      speak('Welcome back. There’s no hurry. Tell me what matters most today, and we’ll take it from there.',{preview:true});
+    });
     $('unlock-form').addEventListener('submit',async e=>{e.preventDefault();const button=$('unlock-submit');button.disabled=true;$('unlock-error').textContent='';try{await vault.unlock($('unlock-pass').value);memory=await vault.list();active=true;started=Date.now();$('unlock-overlay').hidden=true;$('unlock-pass').value='';composeEnabled(true);status('Here with you ✦');notice('Unlocked. Our exchanges will be encrypted locally.');$('chat-input').focus();navigator.storage?.persist?.().catch(()=>{});}catch(error){vault.lock();$('unlock-error').textContent='Incorrect passphrase or damaged vault.';}finally{button.disabled=false;}});
     $('chat-form').addEventListener('submit',e=>{e.preventDefault();send($('chat-input').value);});
     $('chat-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send($('chat-input').value);}});
